@@ -13,15 +13,12 @@ import hpp from 'hpp';
 import cookierSession from 'cookie-session';
 import compression from 'compression';
 import HTTP_STATUS from 'http-status-codes';
-import { config } from './config';
+import { config } from '@root/config';
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
-import applicationRoutes from './routes';
-import {
-  CustomError,
-  IErrorResponse,
-} from './shared/global/helpers/error-handler';
+import applicationRoutes from '@root/routes';
+import { CustomError, IErrorResponse } from '@global/helpers/error-handler';
 import Logger from 'bunyan';
 
 const SERVER_PORT = 5000;
@@ -128,5 +125,7 @@ export class InstaServer {
     });
   }
 
-  private socketIOConnections(socketIO: Server): void {}
+  private socketIOConnections(socketIO: Server): void {
+    log.info('SocketIOConnections');
+  }
 }

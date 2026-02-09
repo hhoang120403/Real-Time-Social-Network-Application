@@ -1,7 +1,7 @@
 import express, { Express } from 'express';
-import { InstaServer } from './setupServer';
-import connectDatabase from './setupDatabase';
-import { config } from './config';
+import { InstaServer } from '@root/setupServer';
+import connectDatabase from '@root/setupDatabase';
+import { config } from '@root/config';
 
 class Application {
   public initialize(): void {
