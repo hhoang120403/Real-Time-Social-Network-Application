@@ -30,6 +30,8 @@
       }
     ],
     "paths": {
+      "@auth/*": ["src/features/auth/*"],
+      "@user/*": ["src/features/user/*"],
       "@global/*": ["src/shared/global/*"],
       "@service/*": ["src/shared/services/*"],
       "@worker/*": ["src/shared/workers/*"],

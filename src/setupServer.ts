@@ -12,7 +12,6 @@ import helmet from 'helmet';
 import hpp from 'hpp';
 import cookierSession from 'cookie-session';
 import compression from 'compression';
-import HTTP_STATUS from 'http-status-codes';
 import { config } from '@root/config';
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
@@ -125,6 +124,7 @@ export class InstaServer {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private socketIOConnections(socketIO: Server): void {
     log.info('SocketIOConnections');
   }
