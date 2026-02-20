@@ -19,6 +19,7 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import applicationRoutes from '@root/routes';
 import { CustomError, IErrorResponse } from '@global/helpers/error-handler';
 import Logger from 'bunyan';
+import { SocketIOPostHandler } from '@socket/post';
 
 const SERVER_PORT = 5000;
 const log: Logger = config.createLogger('server');
@@ -124,8 +125,11 @@ export class InstaServer {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private socketIOConnections(socketIO: Server): void {
-    log.info('SocketIOConnections');
+    const postSocketHandler: SocketIOPostHandler = new SocketIOPostHandler(
+      socketIO,
+    );
+
+    postSocketHandler.listen();
   }
 }

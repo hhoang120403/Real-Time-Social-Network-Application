@@ -100,7 +100,7 @@ export class UserCache extends BaseCache {
         value: `${key}`,
       });
 
-      await this.client.HSET(`user:${key}`, dataToSave);
+      await this.client.HSET(`users:${key}`, dataToSave);
     } catch (error) {
       log.error('Error adding user to cache', error);
       throw new ServerError('Server error while adding user to cache');
