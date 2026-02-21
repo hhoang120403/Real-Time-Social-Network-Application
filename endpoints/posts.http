@@ -8,8 +8,8 @@ Accept: application/json
 withCredentials: true
 
 {
-    "post": "This is my fourth post",
-    "bgColor": "#ffffff",
+    "post": "This is my second post",
+    "bgColor": "#CEEDED",
     "privacy": "Public",
     "gifUrl": "",
     "profilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771587085/6998460a06cd0adfd12dffe2",
