@@ -3,10 +3,10 @@ import { ServerError } from '@global/helpers/error-handler';
 import { BaseCache } from '@service/redis/base.cache';
 import {
   IPostDocument,
-  IReactions,
   ISavePostToCache,
 } from '@post/interfaces/post.interface';
 import { Helpers } from '@global/helpers/helpers';
+import { IReactions } from '@root/features/reactions/interfaces/reaction.interface';
 
 const log: Logger = Logger.createLogger({ name: 'post-cache' });
 
