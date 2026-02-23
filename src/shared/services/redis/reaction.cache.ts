@@ -4,11 +4,12 @@ import {
   IReactionDocument,
   IReactions,
 } from '@reaction/interfaces/reaction.interface';
+import { config } from '@root/config';
 import { BaseCache } from '@service/redis/base.cache';
-import Logger from 'bunyan';
 import { find } from 'lodash';
+import Logger from 'bunyan';
 
-const log: Logger = Logger.createLogger({ name: 'reactions-cache' });
+const log: Logger = config.createLogger('reactions-cache');
 
 export class ReactionCache extends BaseCache {
   constructor() {

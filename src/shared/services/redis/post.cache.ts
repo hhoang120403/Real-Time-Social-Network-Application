@@ -7,8 +7,9 @@ import {
 } from '@post/interfaces/post.interface';
 import { Helpers } from '@global/helpers/helpers';
 import { IReactions } from '@root/features/reactions/interfaces/reaction.interface';
+import { config } from '@root/config';
 
-const log: Logger = Logger.createLogger({ name: 'post-cache' });
+const log: Logger = config.createLogger('post-cache');
 
 export type PostCacheMultiType =
   | string
