@@ -1,0 +1,56 @@
+@baseUrl = http://localhost:5000
+@urlPath = api/v1
+
+###
+PUT {{baseUrl}}/{{urlPath}}/user/follow/699c3581c87a593145fd53ca
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+PUT {{baseUrl}}/{{urlPath}}/user/unfollow/699c3575c87a593145fd53c3/699c3575c87a593145fd53c3
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+GET {{baseUrl}}/{{urlPath}}/user/following
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+GET {{baseUrl}}/{{urlPath}}/user/followers/699c3581c87a593145fd53ca
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+PUT {{baseUrl}}/{{urlPath}}/user/block/699c356ac87a593145fd53bc
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+PUT {{baseUrl}}/{{urlPath}}/user/unblock/699c356ac87a593145fd53bc
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
