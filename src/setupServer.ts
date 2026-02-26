@@ -22,6 +22,7 @@ import Logger from 'bunyan';
 import { SocketIOPostHandler } from '@socket/post';
 import { SocketIOFollowerHandler } from '@socket/follower';
 import { SocketIOUserHandler } from '@socket/user';
+import { SocketIONotificationHandler } from '@socket/notification';
 
 const SERVER_PORT = 5000;
 const log: Logger = config.createLogger('server');
@@ -136,9 +137,12 @@ export class InstaServer {
     const userSocketHandler: SocketIOUserHandler = new SocketIOUserHandler(
       socketIO,
     );
+    const notificationSocketHandler: SocketIONotificationHandler =
+      new SocketIONotificationHandler();
 
     postSocketHandler.listen();
     followerSocketHandler.listen();
     userSocketHandler.listen();
+    notificationSocketHandler.listen(socketIO);
   }
 }
