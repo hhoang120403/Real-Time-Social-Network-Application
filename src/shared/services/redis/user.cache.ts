@@ -1,10 +1,15 @@
 import { ServerError } from '@global/helpers/error-handler';
 import { Helpers } from '@global/helpers/helpers';
 import { BaseCache } from '@service/redis/base.cache';
-import { IUserDocument } from '@user/interfaces/user.interface';
+import {
+  INotificationSettings,
+  ISocialLinks,
+  IUserDocument,
+} from '@user/interfaces/user.interface';
 import Logger from 'bunyan';
 
 const log: Logger = Logger.createLogger({ name: 'user-cache' });
+type UserItem = string | ISocialLinks | INotificationSettings;
 
 export class UserCache extends BaseCache {
   constructor() {
@@ -124,11 +129,36 @@ export class UserCache extends BaseCache {
       response.blockedBy = Helpers.parseJson(`${response.blockedBy}`);
       response.notifications = Helpers.parseJson(`${response.notifications}`);
       response.social = Helpers.parseJson(`${response.social}`);
+      response.bgImageVersion = Helpers.parseJson(`${response.bgImageVersion}`);
+      response.bgImageId = Helpers.parseJson(`${response.bgImageId}`);
+      response.profilePicture = Helpers.parseJson(`${response.profilePicture}`);
 
       return response;
     } catch (error) {
       log.error('Error getting user from cache', error);
       throw new ServerError('Server error while getting user from cache');
+    }
+  }
+
+  public async updateSingleUserItemInCache(
+    userId: string,
+    prop: string,
+    value: UserItem,
+  ): Promise<IUserDocument | null> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      await this.client.HSET(`users:${userId}`, prop, JSON.stringify(value));
+      const response: IUserDocument | null =
+        await this.getUserFromCache(userId);
+      return response;
+    } catch (error) {
+      log.error('Error updating single user item in cache', error);
+      throw new ServerError(
+        'Server error while updating single user item in cache',
+      );
     }
   }
 }
