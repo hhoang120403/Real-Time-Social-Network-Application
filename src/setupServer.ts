@@ -24,6 +24,7 @@ import { SocketIOFollowerHandler } from '@socket/follower';
 import { SocketIOUserHandler } from '@socket/user';
 import { SocketIONotificationHandler } from '@socket/notification';
 import { SocketIOImageHandler } from '@socket/image';
+import { SocketIOChatHandler } from '@socket/chat';
 
 const SERVER_PORT = 5000;
 const log: Logger = config.createLogger('server');
@@ -138,6 +139,9 @@ export class InstaServer {
     const userSocketHandler: SocketIOUserHandler = new SocketIOUserHandler(
       socketIO,
     );
+    const chatSocketHandler: SocketIOChatHandler = new SocketIOChatHandler(
+      socketIO,
+    );
     const notificationSocketHandler: SocketIONotificationHandler =
       new SocketIONotificationHandler();
     const imageSocketHandler: SocketIOImageHandler = new SocketIOImageHandler();
@@ -147,5 +151,6 @@ export class InstaServer {
     userSocketHandler.listen();
     notificationSocketHandler.listen(socketIO);
     imageSocketHandler.listen(socketIO);
+    chatSocketHandler.listen();
   }
 }
