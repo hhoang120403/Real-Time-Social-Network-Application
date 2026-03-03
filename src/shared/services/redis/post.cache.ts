@@ -242,16 +242,15 @@ export class PostCache extends BaseCache {
         await this.client.connect();
       }
 
-      // ZRANGE: returns the specified range of elements in the sorted set at <key>
-      // REV: true: returns the elements in descending order (from highest score to lowest score)
-      const postIds: string[] = await this.client.ZRANGE(key, uId, uId, {
-        REV: true,
-        BY: 'SCORE',
-      });
+      const postIds: string[] = (await this.client.ZRANGE(
+        key,
+        uId,
+        uId,
+      )) as string[];
 
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
-      for (const postId of postIds) {
-        multi.HGETALL(`posts:${postId}`);
+      for (let i = postIds.length - 1; i >= 0; i--) {
+        multi.HGETALL(`posts:${postIds[i]}`);
       }
 
       const replies: PostCacheMultiType =
