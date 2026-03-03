@@ -54,8 +54,6 @@ export class Password {
       throw new BadRequestError('Passwords do not match');
     }
 
-    console.log('Token', token);
-
     const user = await authService.getAuthUserByPasswordToken(token as string);
     if (!user) {
       throw new BadRequestError('Reset token is invalid or has expired');

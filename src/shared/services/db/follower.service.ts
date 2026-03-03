@@ -15,6 +15,7 @@ import { UserCache } from '@service/redis/user.cache';
 import { socketIONotificationObject } from '@socket/notification';
 import { IUserDocument } from '@user/interfaces/user.interface';
 import { UserModel } from '@user/models/user.schema';
+import { map } from 'lodash';
 import { ObjectId, BulkWriteResult } from 'mongodb';
 import mongoose, { Query } from 'mongoose';
 
@@ -243,6 +244,24 @@ class FollowerService {
     ]);
 
     return followers;
+  }
+
+  public async getFolloweesIds(userId: string): Promise<string[]> {
+    const followees = await FollowerModel.aggregate([
+      {
+        $match: {
+          followerId: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $project: {
+          followeeId: 1,
+          _id: 0,
+        },
+      },
+    ]);
+
+    return map(followees, (item) => item.followeeId.toString());
   }
 }
 

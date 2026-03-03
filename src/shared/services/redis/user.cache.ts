@@ -7,9 +7,16 @@ import {
   IUserDocument,
 } from '@user/interfaces/user.interface';
 import Logger from 'bunyan';
+import { findIndex, indexOf } from 'lodash';
 
 const log: Logger = Logger.createLogger({ name: 'user-cache' });
 type UserItem = string | ISocialLinks | INotificationSettings;
+export type UserCacheMultiType =
+  | string
+  | number
+  | Buffer
+  | IUserDocument
+  | IUserDocument[];
 
 export class UserCache extends BaseCache {
   constructor() {
@@ -44,56 +51,28 @@ export class UserCache extends BaseCache {
       social,
     } = createdUser;
 
-    const firstList: string[] = [
-      '_id',
-      `${_id}`,
-      'uId',
-      `${uId}`,
-      'username',
-      `${username}`,
-      'email',
-      `${email}`,
-      'avatarColor',
-      `${avatarColor}`,
-      'createdAt',
-      `${createdAt}`,
-      'postsCount',
-      `${postsCount}`,
-    ];
-
-    const secondList: string[] = [
-      'blocked',
-      JSON.stringify(blocked),
-      'blockedBy',
-      JSON.stringify(blockedBy),
-      'followersCount',
-      `${followersCount}`,
-      'followingCount',
-      `${followingCount}`,
-      'notifications',
-      JSON.stringify(notifications),
-      'social',
-      JSON.stringify(social),
-      'profilePicture',
-      `${profilePicture}`,
-    ];
-
-    const thirdList: string[] = [
-      'work',
-      `${work}`,
-      'location',
-      `${location}`,
-      'school',
-      `${school}`,
-      'quote',
-      `${quote}`,
-      'bgImageVersion',
-      `${bgImageVersion}`,
-      'bgImageId',
-      `${bgImageId}`,
-    ];
-
-    const dataToSave: string[] = [...firstList, ...secondList, ...thirdList];
+    const dataToSave = {
+      _id: `${_id}`,
+      uId: `${uId}`,
+      username: `${username}`,
+      email: `${email}`,
+      avatarColor: `${avatarColor}`,
+      createdAt: `${createdAt}`,
+      postsCount: `${postsCount}`,
+      blocked: JSON.stringify(blocked),
+      blockedBy: JSON.stringify(blockedBy),
+      profilePicture: `${profilePicture}`,
+      followersCount: `${followersCount}`,
+      followingCount: `${followingCount}`,
+      notifications: JSON.stringify(notifications),
+      social: JSON.stringify(social),
+      work: `${work}`,
+      location: `${location}`,
+      school: `${school}`,
+      quote: `${quote}`,
+      bgImageVersion: `${bgImageVersion}`,
+      bgImageId: `${bgImageId}`,
+    };
 
     try {
       if (!this.client.isOpen) {
@@ -105,7 +84,9 @@ export class UserCache extends BaseCache {
         value: `${key}`,
       });
 
-      await this.client.HSET(`users:${key}`, dataToSave);
+      for (const [itemKey, itemValue] of Object.entries(dataToSave)) {
+        await this.client.HSET(`users:${key}`, `${itemKey}`, `${itemValue}`);
+      }
     } catch (error) {
       log.error('Error adding user to cache', error);
       throw new ServerError('Server error while adding user to cache');
@@ -140,6 +121,114 @@ export class UserCache extends BaseCache {
     }
   }
 
+  public async getUsersFromCache(
+    start: number,
+    end: number,
+    excludedUserKey: string,
+  ): Promise<IUserDocument[]> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const response: string[] = (await this.client.ZRANGE(
+        'user',
+        start,
+        end,
+      )) as string[];
+
+      const multi: ReturnType<typeof this.client.multi> = this.client.multi();
+      for (let i = response.length - 1; i >= 0; i--) {
+        if (response[i] !== excludedUserKey) {
+          multi.HGETALL(`users:${response[i]}`);
+        }
+      }
+
+      const replies: UserCacheMultiType =
+        (await multi.exec()) as UserCacheMultiType;
+      const users: IUserDocument[] = [];
+      for (const reply of replies as IUserDocument[]) {
+        reply.createdAt = new Date(Helpers.parseJson(`${reply.createdAt}`));
+        reply.postsCount = Helpers.parseJson(`${reply.postsCount}`);
+        reply.followersCount = Helpers.parseJson(`${reply.followersCount}`);
+        reply.followingCount = Helpers.parseJson(`${reply.followingCount}`);
+        reply.blocked = Helpers.parseJson(`${reply.blocked}`);
+        reply.blockedBy = Helpers.parseJson(`${reply.blockedBy}`);
+        reply.notifications = Helpers.parseJson(`${reply.notifications}`);
+        reply.social = Helpers.parseJson(`${reply.social}`);
+        reply.bgImageVersion = Helpers.parseJson(`${reply.bgImageVersion}`);
+        reply.bgImageId = Helpers.parseJson(`${reply.bgImageId}`);
+        reply.profilePicture = Helpers.parseJson(`${reply.profilePicture}`);
+
+        users.push(reply);
+      }
+
+      return users;
+    } catch (error) {
+      log.error('Error getting user from cache', error);
+      throw new ServerError('Server error while getting user from cache');
+    }
+  }
+
+  public async getRandomUsersFromCache(
+    userId: string,
+    excludedUsername: string,
+  ): Promise<IUserDocument[]> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const replies: IUserDocument[] = [];
+      const followers: string[] = await this.client.LRANGE(
+        `followers:${userId}`,
+        0,
+        -1,
+      );
+      const users: string[] = await this.client.ZRANGE('user', 0, -1);
+      const randomUsers: string[] = Helpers.shuffle(users).slice(0, 10);
+      for (const key of randomUsers) {
+        const followerIndex = indexOf(followers, key);
+        if (followerIndex < 0) {
+          const userHash: IUserDocument = (await this.client.HGETALL(
+            `users:${key}`,
+          )) as unknown as IUserDocument;
+          if (userHash) {
+            replies.push(userHash);
+          }
+        }
+      }
+
+      const excludedUsernameIndex: number = findIndex(replies, [
+        'username',
+        excludedUsername,
+      ]);
+
+      if (excludedUsernameIndex > -1) {
+        replies.splice(excludedUsernameIndex, 1);
+      }
+
+      for (const reply of replies as IUserDocument[]) {
+        reply.createdAt = new Date(Helpers.parseJson(`${reply.createdAt}`));
+        reply.postsCount = Helpers.parseJson(`${reply.postsCount}`);
+        reply.followersCount = Helpers.parseJson(`${reply.followersCount}`);
+        reply.followingCount = Helpers.parseJson(`${reply.followingCount}`);
+        reply.blocked = Helpers.parseJson(`${reply.blocked}`);
+        reply.blockedBy = Helpers.parseJson(`${reply.blockedBy}`);
+        reply.notifications = Helpers.parseJson(`${reply.notifications}`);
+        reply.social = Helpers.parseJson(`${reply.social}`);
+        reply.bgImageVersion = Helpers.parseJson(`${reply.bgImageVersion}`);
+        reply.bgImageId = Helpers.parseJson(`${reply.bgImageId}`);
+        reply.profilePicture = Helpers.parseJson(`${reply.profilePicture}`);
+      }
+
+      return replies;
+    } catch (error) {
+      log.error('Error getting user from cache', error);
+      throw new ServerError('Server error while getting user from cache');
+    }
+  }
+
   public async updateSingleUserItemInCache(
     userId: string,
     prop: string,
@@ -159,6 +248,21 @@ export class UserCache extends BaseCache {
       throw new ServerError(
         'Server error while updating single user item in cache',
       );
+    }
+  }
+
+  public async getTotalUsersInCache(): Promise<number> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const count: number = await this.client.ZCARD('user');
+
+      return count;
+    } catch (error) {
+      log.error('Error getting total users in cache', error);
+      throw new ServerError('Server error while getting total users in cache');
     }
   }
 }
