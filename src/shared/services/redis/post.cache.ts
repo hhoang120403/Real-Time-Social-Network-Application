@@ -46,46 +46,6 @@ export class PostCache extends BaseCache {
       createdAt,
     } = createdPost;
 
-    // const firstList: string[] = [
-    //   '_id',
-    //   `${_id}`,
-    //   'userId',
-    //   `${userId}`,
-    //   'username',
-    //   `${username}`,
-    //   'email',
-    //   `${email}`,
-    //   'privacy',
-    //   `${privacy}`,
-    //   'avatarColor',
-    //   `${avatarColor}`,
-    //   'profilePicture',
-    //   `${profilePicture}`,
-    //   'post',
-    //   `${post}`,
-    //   'bgColor',
-    //   `${bgColor}`,
-    //   'feelings',
-    //   `${feelings}`,
-    //   'gifUrl',
-    //   `${gifUrl}`,
-    // ];
-
-    // const secondList: string[] = [
-    //   'commentsCount',
-    //   `${commentsCount}`,
-    //   'reactions',
-    //   JSON.stringify(reactions),
-    //   'imgVersion',
-    //   `${imgVersion}`,
-    //   'imgId',
-    //   `${imgId}`,
-    //   'createdAt',
-    //   `${createdAt}`,
-    // ];
-
-    // const dataToSave: string[] = [...firstList, ...secondList];
-
     const dataToSave = {
       _id: `${_id}`,
       userId: `${userId}`,
@@ -233,6 +193,46 @@ export class PostCache extends BaseCache {
     }
   }
 
+  public async getPostsWithVideosFromCache(
+    key: string,
+    start: number,
+    end: number,
+  ): Promise<IPostDocument[]> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const postIds: string[] = await this.client.ZRANGE(key, start, end);
+
+      const multi: ReturnType<typeof this.client.multi> = this.client.multi();
+      for (let i = postIds.length - 1; i >= 0; i--) {
+        multi.HGETALL(`posts:${postIds[i]}`);
+      }
+
+      const replies: PostCacheMultiType =
+        (await multi.exec()) as PostCacheMultiType;
+      const postsWithVideos: IPostDocument[] = [];
+      for (const post of replies as IPostDocument[]) {
+        if (post.videoId && post.videoVersion) {
+          post.commentsCount = Helpers.parseJson(
+            `${post.commentsCount}`,
+          ) as number;
+          post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
+          post.createdAt = new Date(
+            Helpers.parseJson(`${post.createdAt}`),
+          ) as Date;
+          postsWithVideos.push(post);
+        }
+      }
+
+      return postsWithVideos;
+    } catch (error) {
+      log.error(error);
+      throw new ServerError('Server error. Try again');
+    }
+  }
+
   public async getUserPostsFromCache(
     key: string,
     uId: number,
@@ -320,30 +320,6 @@ export class PostCache extends BaseCache {
       profilePicture,
     } = updatedPost;
 
-    // const firstList: string[] = [
-    //   'post',
-    //   `${post}`,
-    //   'bgColor',
-    //   `${bgColor}`,
-    //   'feelings',
-    //   `${feelings}`,
-    //   'privacy',
-    //   `${privacy}`,
-    //   'gifUrl',
-    //   `${gifUrl}`,
-    // ];
-
-    // const secondList: string[] = [
-    //   'imgVersion',
-    //   `${imgVersion}`,
-    //   'imgId',
-    //   `${imgId}`,
-    //   'profilePicture',
-    //   `${profilePicture}`,
-    // ];
-
-    // const dataToSave: string[] = [...firstList, ...secondList];
-
     const dataToSave = {
       post: `${post}`,
       bgColor: `${bgColor}`,
@@ -362,7 +338,6 @@ export class PostCache extends BaseCache {
         await this.client.connect();
       }
 
-      // await this.client.HSET(`posts:${key}`, dataToSave);
       for (const [itemKey, itemValue] of Object.entries(dataToSave)) {
         await this.client.HSET(`posts:${key}`, `${itemKey}`, `${itemValue}`);
       }
