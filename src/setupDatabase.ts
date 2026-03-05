@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-import { config } from './config';
+import { config } from '@root/config';
+import { redisConnection } from '@service/redis/redis.connection';
 
 const log = config.createLogger('database');
 
@@ -9,6 +10,7 @@ export default () => {
       .connect(config.DATABASE_URL || '')
       .then(() => {
         log.info('Successfully connected to MongoDB');
+        redisConnection.connect();
       })
       .catch((error) => {
         log.error('Error connecting to MongoDB:', error);

@@ -1,0 +1,102 @@
+@baseUrl = http://localhost:5000
+@urlPath = api/v1
+
+###
+POST {{baseUrl}}/{{urlPath}}/chat/message
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+    "conversationId": "69a55b3777113b60fa5c471e",
+    "receiverId": "699c3575c87a593145fd53c3",
+    "receiverUsername": "Jayz1204",
+    "receiverAvatarColor": "blue",
+    "receiverProfilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771844983/699c3575c87a593145fd53c3",
+    "body": "This is another message",
+    "gifUrl": "",
+    "isRead": false,
+    "selectedImage": ""
+}
+
+###
+POST {{baseUrl}}/{{urlPath}}/chat/message/add-chat-users
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+    "userOne": "699c3560c87a593145fd53b5",
+    "userTwo": "699c3575c87a593145fd53c3"
+}
+
+###
+POST {{baseUrl}}/{{urlPath}}/chat/message/remove-chat-users
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+    "conversationId": "69a55b3777113b60fa5c471e",
+    "receiverId": "699c3575c87a593145fd53c3",
+    "receiverUsername": "Jayz1204",
+    "receiverAvatarColor": "blue",
+    "receiverProfilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771844983/699c3575c87a593145fd53c3",
+    "body": "This is another message",
+    "gifUrl": "",
+    "isRead": true,
+    "selectedImage": ""
+}
+
+###
+GET {{baseUrl}}/{{urlPath}}/chat/message/conversation-list
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+GET {{baseUrl}}/{{urlPath}}/chat/message/user/699c3575c87a593145fd53c3
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+DELETE {{baseUrl}}/{{urlPath}}/chat/message/mark-as-deleted/69a56d7543b16817262e317c/699c3560c87a593145fd53b5/699c3575c87a593145fd53c3/deleteForEveryone
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+}
+
+###
+PUT {{baseUrl}}/{{urlPath}}/chat/message/mark-as-read
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+  "senderId": "699c3560c87a593145fd53b5",
+  "receiverId": "699c3575c87a593145fd53c3"
+}
+
+###
+PUT {{baseUrl}}/{{urlPath}}/chat/message/reaction
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+  "conversationId": "69a55b3777113b60fa5c471e",
+  "messageId": "69a5959f37b0169baf7f97d1",
+  "reaction": "love",
+  "type": "add"
+}
+
+
