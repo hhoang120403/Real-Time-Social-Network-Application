@@ -1,0 +1,45 @@
+@baseUrl = http://localhost:5000
+@urlPath = api/v1
+
+###
+POST {{baseUrl}}/{{urlPath}}/post/reaction
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{
+    "userTo": "699c3560c87a593145fd53b5",
+    "postId": "699fcff9fe1fbb2b0b6dbd77",
+    "type": "happy",
+    "previousReaction": "",
+    "postReactions": {"like": 0,"love": 0,"happy": 1,"angry": 0,"sad": 0,"wow": 0},
+    "profilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771587085/6998460a06cd0adfd12dffe2"
+}
+
+###
+DELETE {{baseUrl}}/{{urlPath}}/post/reaction/699c3560c87a593145fd53b5/happy/{"like": 0,"love": 0,"happy": 0,"angry": 0,"sad": 0,"wow": 0}
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+{}
+
+###
+GET {{baseUrl}}/{{urlPath}}/post/reactions/6999adab2fffc03496acbf94
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+###
+GET {{baseUrl}}/{{urlPath}}/post/single/reaction/username/Jayz1204/6999adab2fffc03496acbf94
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+###
+GET {{baseUrl}}/{{urlPath}}/post/reactions/username/jayz1204
+Content-Type: application/json
+Accept: application/json
+withCredentials: true
+
+

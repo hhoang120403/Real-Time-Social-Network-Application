@@ -5,8 +5,9 @@
     "lib": ["DOM", "ES2015"],
     "baseUrl": ".",
     "outDir": "./build",
-    "rootDir": "src",
+    "rootDir": ".",
     "strict": true,
+    "types": ["node", "jest"],
     "noImplicitAny": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
@@ -18,6 +19,32 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "pretty": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "plugins": [
+      {
+        "transform": "typescript-transform-paths"
+      },
+      {
+        "transform": "typescript-transform-paths",
+        "after": true,
+        "afterDeclarations": true
+      }
+    ],
+    "paths": {
+      "@auth/*": ["src/features/auth/*"],
+      "@user/*": ["src/features/user/*"],
+      "@post/*": ["src/features/post/*"],
+      "@comment/*": ["src/features/comments/*"],
+      "@reaction/*": ["src/features/reactions/*"],
+      "@follower/*": ["src/features/followers/*"],
+      "@notification/*": ["src/features/notifications/*"],
+      "@image/*": ["src/features/images/*"],
+      "@chat/*": ["src/features/chat/*"],
+      "@global/*": ["src/shared/global/*"],
+      "@service/*": ["src/shared/services/*"],
+      "@worker/*": ["src/shared/workers/*"],
+      "@socket/*": ["src/shared/sockets/*"],
+      "@root/*": ["src/*"]
+    }
   }
 }
