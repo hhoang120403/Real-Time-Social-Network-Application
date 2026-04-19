@@ -189,7 +189,7 @@ export class UserCache extends BaseCache {
 
       const replies: IUserDocument[] = [];
       const followers: string[] = await this.client.LRANGE(
-        `followers:${userId}`,
+        `following:${userId}`,
         0,
         -1,
       );

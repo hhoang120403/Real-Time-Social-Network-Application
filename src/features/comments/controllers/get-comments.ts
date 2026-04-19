@@ -45,7 +45,7 @@ export class GetCommentController {
 
     res.status(HTTP_STATUS.OK).json({
       message: 'Comments names retrieved successfully',
-      comments: commentsNames,
+      comments: commentsNames[0],
     });
   }
 

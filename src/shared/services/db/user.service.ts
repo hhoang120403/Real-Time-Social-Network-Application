@@ -180,7 +180,10 @@ class UserService {
     return totalUsers;
   }
 
-  public async searchUsers(regex: RegExp): Promise<ISearchUser[]> {
+  public async searchUsers(
+    regex: RegExp,
+    currentUserId: string,
+  ): Promise<ISearchUser[]> {
     const users = await AuthModel.aggregate([
       { $match: { username: regex } },
       {
@@ -193,12 +196,16 @@ class UserService {
       },
       { $unwind: '$user' },
       {
+        $match: {
+          'user._id': { $ne: new mongoose.Types.ObjectId(currentUserId) },
+        },
+      },
+      {
         $project: {
           _id: '$user._id',
           username: 1,
-          email: 1,
           avatarColor: 1,
-          profilePicture: 1,
+          profilePicture: '$user.profilePicture',
         },
       },
     ]);

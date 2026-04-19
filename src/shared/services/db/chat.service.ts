@@ -15,7 +15,14 @@ class ChatService {
         _id: data?.conversationId,
         senderId: data?.senderId,
         receiverId: data?.receiverId,
+        deletedFor: [],
+        deletedAtFor: [],
       });
+    } else {
+      await ConversationModel.updateOne(
+        { _id: data?.conversationId },
+        { $pull: { deletedFor: { $in: [data.senderId, data.receiverId] } } },
+      ).exec();
     }
 
     await MessageModel.create({
@@ -41,6 +48,24 @@ class ChatService {
   public async getUserConversationList(
     userId: ObjectId,
   ): Promise<IMessageData[]> {
+    const hiddenConversations = await ConversationModel.find({
+      'deletedAtFor.userId': userId,
+    })
+      .select('_id deletedAtFor')
+      .exec();
+    const deletedAtByConversation = new Map<string, Date>();
+    hiddenConversations.forEach((conversation) => {
+      const deletedAtItem = conversation.deletedAtFor.find(
+        (item) => `${item.userId}` === `${userId}`,
+      );
+      if (deletedAtItem) {
+        deletedAtByConversation.set(
+          `${conversation._id}`,
+          deletedAtItem.deletedAt,
+        );
+      }
+    });
+
     const messages: IMessageData[] = await MessageModel.aggregate([
       {
         $match: {
@@ -81,7 +106,59 @@ class ChatService {
         },
       },
     ]);
-    return messages;
+    return messages.filter((message) => {
+      const deletedAt = deletedAtByConversation.get(
+        `${message.conversationId}`,
+      );
+      return !deletedAt || new Date(message.createdAt) > deletedAt;
+    });
+  }
+
+  public async deleteConversationForUser(
+    senderId: ObjectId,
+    receiverId: ObjectId,
+  ): Promise<void> {
+    const deletedAt = new Date();
+    await ConversationModel.updateOne(
+      {
+        $or: [
+          { senderId, receiverId },
+          { senderId: receiverId, receiverId: senderId },
+        ],
+      },
+      {
+        $addToSet: { deletedFor: senderId },
+        $pull: { deletedAtFor: { userId: senderId } },
+      },
+    ).exec();
+    await ConversationModel.updateOne(
+      {
+        $or: [
+          { senderId, receiverId },
+          { senderId: receiverId, receiverId: senderId },
+        ],
+      },
+      { $push: { deletedAtFor: { userId: senderId, deletedAt } } },
+    ).exec();
+  }
+
+  public async getConversationDeletedAtForUser(
+    senderId: ObjectId,
+    receiverId: ObjectId,
+  ): Promise<Date | null> {
+    const conversation = await ConversationModel.findOne({
+      $or: [
+        { senderId, receiverId },
+        { senderId: receiverId, receiverId: senderId },
+      ],
+    })
+      .select('deletedAtFor')
+      .exec();
+
+    const deletedAtItem = conversation?.deletedAtFor.find(
+      (item) => `${item.userId}` === `${senderId}`,
+    );
+    return deletedAtItem?.deletedAt ?? null;
   }
 
   public async getMessages(
@@ -167,6 +244,18 @@ class ChatService {
         { $pull: { reaction: { senderName } } },
       ).exec();
     }
+  }
+
+  public async editChatMessage(
+    messageId: string,
+    body: string,
+    gifUrl = '',
+    selectedImage = '',
+  ): Promise<void> {
+    await MessageModel.updateOne(
+      { _id: messageId },
+      { $set: { body, gifUrl, selectedImage } },
+    ).exec();
   }
 }
 

@@ -57,6 +57,18 @@ class ChatWorker {
       done(error as Error);
     }
   }
+
+  async updateChatMessageInDB(job: Job, done: DoneCallback): Promise<void> {
+    try {
+      const { messageId, body, gifUrl, selectedImage } = job.data;
+      await chatService.editChatMessage(messageId, body, gifUrl, selectedImage);
+      job.progress(100);
+      done(null, job.data);
+    } catch (error) {
+      log.error(error);
+      done(error as Error);
+    }
+  }
 }
 
 export const chatWorker: ChatWorker = new ChatWorker();

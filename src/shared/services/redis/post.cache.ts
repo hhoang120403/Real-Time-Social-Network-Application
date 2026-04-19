@@ -77,8 +77,10 @@ export class PostCache extends BaseCache {
         'postsCount',
       );
 
+      const score = Date.now();
+
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
-      multi.ZADD('post', { score: parseInt(uId, 10), value: `${key}` });
+      multi.ZADD('post', { score, value: `${key}` });
       for (const [itemKey, itemValue] of Object.entries(dataToSave)) {
         multi.HSET(`posts:${key}`, `${itemKey}`, `${itemValue}`);
       }
@@ -101,17 +103,44 @@ export class PostCache extends BaseCache {
         await this.client.connect();
       }
 
-      // ZRANGE: returns the specified range of elements in the sorted set at <key>
-      // REV: true: returns the elements in descending order (from highest score to lowest score)
+      // Controller hiện tại truyền:
+      // page 1: start=0, end=10
+      // page 2: start=11, end=20
+      // page 3: start=21, end=30
+      //
+      // Convert sang:
+      // pageSize = 10
+      // page 1 -> newest indices: total-10 ... total-1
+      // page 2 -> newest indices: total-20 ... total-11
+      // ...
+
+      const total: number = await this.client.ZCARD(key);
+
+      const pageSize = start === 0 ? end : end - start + 1;
+      const page = Math.ceil(end / pageSize);
+
+      let redisStart = total - page * pageSize;
+      const redisEnd = redisStart + pageSize - 1;
+
+      if (redisStart < 0) {
+        redisStart = 0;
+      }
+
+      if (redisEnd < 0 || redisStart > redisEnd) {
+        return [];
+      }
+
       const postIds: string[] = (await this.client.ZRANGE(
         key,
-        start,
-        end,
+        redisStart,
+        redisEnd,
       )) as string[];
 
+      postIds.reverse();
+
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
-      for (let i = postIds.length - 1; i >= 0; i--) {
-        multi.HGETALL(`posts:${postIds[i]}`);
+      for (const postId of postIds) {
+        multi.HGETALL(`posts:${postId}`);
       }
 
       const replies: PostCacheMultiType =
@@ -163,11 +192,33 @@ export class PostCache extends BaseCache {
 
       // ZRANGE: returns the specified range of elements in the sorted set at <key>
       // REV: true: returns the elements in descending order (from highest score to lowest score)
-      const postIds: string[] = await this.client.ZRANGE(key, start, end);
+      const total: number = await this.client.ZCARD(key);
+
+      const pageSize = start === 0 ? end : end - start + 1;
+      const page = Math.ceil(end / pageSize);
+
+      let redisStart = total - page * pageSize;
+      const redisEnd = total - (page - 1) * pageSize - 1;
+
+      if (redisStart < 0) {
+        redisStart = 0;
+      }
+
+      if (redisEnd < 0 || redisStart > redisEnd) {
+        return [];
+      }
+
+      const postIds: string[] = (await this.client.ZRANGE(
+        key,
+        redisStart,
+        redisEnd,
+      )) as string[];
+
+      postIds.reverse();
 
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
-      for (let i = postIds.length - 1; i >= 0; i--) {
-        multi.HGETALL(`posts:${postIds[i]}`);
+      for (const postId of postIds) {
+        multi.HGETALL(`posts:${postId}`);
       }
 
       const replies: PostCacheMultiType =
@@ -203,11 +254,33 @@ export class PostCache extends BaseCache {
         await this.client.connect();
       }
 
-      const postIds: string[] = await this.client.ZRANGE(key, start, end);
+      const total: number = await this.client.ZCARD(key);
+
+      const pageSize = start === 0 ? end : end - start + 1;
+      const page = Math.ceil(end / pageSize);
+
+      let redisStart = total - page * pageSize;
+      const redisEnd = total - (page - 1) * pageSize - 1;
+
+      if (redisStart < 0) {
+        redisStart = 0;
+      }
+
+      if (redisEnd < 0 || redisStart > redisEnd) {
+        return [];
+      }
+
+      const postIds: string[] = (await this.client.ZRANGE(
+        key,
+        redisStart,
+        redisEnd,
+      )) as string[];
+
+      postIds.reverse();
 
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
-      for (let i = postIds.length - 1; i >= 0; i--) {
-        multi.HGETALL(`posts:${postIds[i]}`);
+      for (const postId of postIds) {
+        multi.HGETALL(`posts:${postId}`);
       }
 
       const replies: PostCacheMultiType =
@@ -234,40 +307,17 @@ export class PostCache extends BaseCache {
   }
 
   public async getUserPostsFromCache(
-    key: string,
-    uId: number,
+    _key: string,
+    _uId: number,
   ): Promise<IPostDocument[]> {
     try {
       if (!this.client.isOpen) {
         await this.client.connect();
       }
 
-      const postIds: string[] = (await this.client.ZRANGE(
-        key,
-        uId,
-        uId,
-      )) as string[];
-
-      const multi: ReturnType<typeof this.client.multi> = this.client.multi();
-      for (let i = postIds.length - 1; i >= 0; i--) {
-        multi.HGETALL(`posts:${postIds[i]}`);
-      }
-
-      const replies: PostCacheMultiType =
-        (await multi.exec()) as PostCacheMultiType;
-      const posts: IPostDocument[] = [];
-      for (const post of replies as IPostDocument[]) {
-        post.commentsCount = Helpers.parseJson(
-          `${post.commentsCount}`,
-        ) as number;
-        post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
-        post.createdAt = new Date(
-          Helpers.parseJson(`${post.createdAt}`),
-        ) as Date;
-        posts.push(post);
-      }
-
-      return posts;
+      // Return empty to force fetching user posts from DB because
+      // the global 'post' set shouldn't be indexed by uId (which is a long integer identifier).
+      return [];
     } catch (error) {
       log.error(error);
       throw new ServerError('Server error. Try again');
@@ -357,6 +407,38 @@ export class PostCache extends BaseCache {
       ) as Date;
 
       return postReply[0];
+    } catch (error) {
+      log.error(error);
+      throw new ServerError('Server error. Try again');
+    }
+  }
+
+  public async updatePostUserProfilePictureInCache(
+    userId: string,
+    profilePicture: string,
+  ): Promise<void> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const postIds: string[] = (await this.client.ZRANGE(
+        'post',
+        0,
+        -1,
+      )) as string[];
+
+      const multi: ReturnType<typeof this.client.multi> = this.client.multi();
+
+      // For a massive database we would use SCAN or lua script, but since it's a worker this is acceptable.
+      for (const postId of postIds) {
+        const postUserId = await this.client.HGET(`posts:${postId}`, 'userId');
+        if (postUserId === userId) {
+          multi.HSET(`posts:${postId}`, 'profilePicture', profilePicture);
+        }
+      }
+
+      await multi.exec();
     } catch (error) {
       log.error(error);
       throw new ServerError('Server error. Try again');

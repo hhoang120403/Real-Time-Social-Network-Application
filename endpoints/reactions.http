@@ -8,16 +8,16 @@ Accept: application/json
 withCredentials: true
 
 {
-    "userTo": "699c3560c87a593145fd53b5",
-    "postId": "699fcff9fe1fbb2b0b6dbd77",
-    "type": "happy",
+    "userTo": "69b62d2b5ab4c8bd663c0e94",
+    "postId": "69ba2630402712ed56a62cc8",
+    "type": "love",
     "previousReaction": "",
-    "postReactions": {"like": 0,"love": 0,"happy": 1,"angry": 0,"sad": 0,"wow": 0},
-    "profilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771587085/6998460a06cd0adfd12dffe2"
+    "postReactions": {"like": 0,"love": 1,"happy": 0,"angry": 0,"sad": 0,"wow": 0},
+    "profilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1773546796/69b62d2b5ab4c8bd663c0e94"
 }
 
 ###
-DELETE {{baseUrl}}/{{urlPath}}/post/reaction/699c3560c87a593145fd53b5/happy/{"like": 0,"love": 0,"happy": 0,"angry": 0,"sad": 0,"wow": 0}
+DELETE {{baseUrl}}/{{urlPath}}/post/reaction/69ba2630402712ed56a62cc8/love/{"like": 0,"love": 0,"happy": 0,"angry": 0,"sad": 0,"wow": 0}
 Content-Type: application/json
 Accept: application/json
 withCredentials: true
@@ -31,13 +31,13 @@ Accept: application/json
 withCredentials: true
 
 ###
-GET {{baseUrl}}/{{urlPath}}/post/single/reaction/username/Jayz1204/6999adab2fffc03496acbf94
+GET {{baseUrl}}/{{urlPath}}/post/single/reaction/username/Hhoang1204/69ba2630402712ed56a62cc8
 Content-Type: application/json
 Accept: application/json
 withCredentials: true
 
 ###
-GET {{baseUrl}}/{{urlPath}}/post/reactions/username/jayz1204
+GET {{baseUrl}}/{{urlPath}}/post/reactions/username/hhoang1204
 Content-Type: application/json
 Accept: application/json
 withCredentials: true

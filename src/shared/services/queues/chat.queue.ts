@@ -21,6 +21,11 @@ class ChatQueue extends BaseQueue {
       5,
       chatWorker.updateMessageReactionInDB,
     );
+    this.processJob(
+      'updateChatMessageInDB',
+      5,
+      chatWorker.updateChatMessageInDB,
+    );
   }
 
   public addChatJob(name: string, data: IChatJobData | IMessageData): void {

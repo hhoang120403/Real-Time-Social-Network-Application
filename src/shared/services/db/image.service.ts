@@ -1,6 +1,7 @@
 import { IFileImageDocument } from '@image/interfaces/image.interface';
 import { ImageModel } from '@image/models/image.schema';
 import { UserModel } from '@user/models/user.schema';
+import { PostModel } from '@post/models/post.schema';
 import mongoose from 'mongoose';
 
 class ImageService {
@@ -10,10 +11,16 @@ class ImageService {
     imgId: string,
     imgVersion: string,
   ): Promise<void> {
-    await UserModel.updateOne(
-      { _id: userId },
-      { $set: { profilePicture: url } },
-    ).exec();
+    await Promise.all([
+      UserModel.updateOne(
+        { _id: userId },
+        { $set: { profilePicture: url } },
+      ).exec(),
+      PostModel.updateMany(
+        { userId: userId },
+        { $set: { profilePicture: url } },
+      ).exec(),
+    ]);
     await this.addImage(userId, imgId, imgVersion, 'profile');
   }
 

@@ -17,4 +17,13 @@ const markChatSchema: ObjectSchema = Joi.object().keys({
   receiverId: Joi.string().required()
 });
 
-export { addChatSchema, markChatSchema };
+const editChatSchema: ObjectSchema = Joi.object().keys({
+  senderId: Joi.string().required(),
+  receiverId: Joi.string().required(),
+  messageId: Joi.string().required(),
+  body: Joi.string().required().allow(''),
+  gifUrl: Joi.string().optional().allow(null, ''),
+  selectedImage: Joi.string().optional().allow(null, '')
+});
+
+export { addChatSchema, markChatSchema, editChatSchema };

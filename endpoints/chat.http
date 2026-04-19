@@ -8,12 +8,12 @@ Accept: application/json
 withCredentials: true
 
 {
-    "conversationId": "69a55b3777113b60fa5c471e",
-    "receiverId": "699c3575c87a593145fd53c3",
-    "receiverUsername": "Jayz1204",
-    "receiverAvatarColor": "blue",
-    "receiverProfilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771844983/699c3575c87a593145fd53c3",
-    "body": "This is another message",
+    "conversationId": "69cd28b250ac79492001ea59",
+    "receiverId": "69b63544820278448f8a2615",
+    "receiverUsername": "sammy",
+    "receiverAvatarColor": "#1a237e",
+    "receiverProfilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1773548869/69b63544820278448f8a2615",
+    "body": "Hello from manhdc",
     "gifUrl": "",
     "isRead": false,
     "selectedImage": ""
@@ -26,8 +26,8 @@ Accept: application/json
 withCredentials: true
 
 {
-    "userOne": "699c3560c87a593145fd53b5",
-    "userTwo": "699c3575c87a593145fd53c3"
+    "userOne": "69b63544820278448f8a2615",
+    "userTwo": "69be0e4bee45358a29f56343"
 }
 
 ###

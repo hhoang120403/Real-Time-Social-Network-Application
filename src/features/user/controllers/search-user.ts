@@ -10,7 +10,10 @@ export class SearchUserController {
       Helpers.escapeRegex(req.params.query as string),
       'i',
     );
-    const users: ISearchUser[] = await userService.searchUsers(regex);
+    const users: ISearchUser[] = await userService.searchUsers(
+      regex,
+      req.currentUser!.userId,
+    );
     res.status(HTTP_STATUS.OK).json({ message: 'Search results', users });
   }
 }

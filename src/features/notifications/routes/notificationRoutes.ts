@@ -23,6 +23,11 @@ class NotificationRoutes {
       authMiddleware.checkAuthentication,
       UpdateNotificationController.prototype.markAsReadNotification,
     );
+    this.router.put(
+      '/notifications',
+      authMiddleware.checkAuthentication,
+      UpdateNotificationController.prototype.updateAllNotifications,
+    );
     this.router.delete(
       '/notification/:notificationId',
       authMiddleware.checkAuthentication,

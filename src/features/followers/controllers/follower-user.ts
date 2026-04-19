@@ -79,10 +79,12 @@ export class AddFollowerController {
       _id: new mongoose.Types.ObjectId(user._id),
       username: user.username!,
       avatarColor: user.avatarColor!,
-      postCount: user.postsCount,
+      postsCount: user.postsCount,
       followersCount: user.followersCount,
       followingCount: user.followingCount,
       profilePicture: user.profilePicture,
+      bgImageVersion: user.bgImageVersion,
+      bgImageId: user.bgImageId,
       uId: user.uId!,
       userProfile: user,
     };

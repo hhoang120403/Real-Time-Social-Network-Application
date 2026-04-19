@@ -28,6 +28,10 @@ export class GetChatMessagesController {
   public async getMessages(req: Request, res: Response): Promise<void> {
     const { receiverId } = req.params;
     let messages: IMessageData[] = [];
+    const deletedAt = await chatService.getConversationDeletedAtForUser(
+      new mongoose.Types.ObjectId(req.currentUser!.userId),
+      new mongoose.Types.ObjectId(receiverId as string),
+    );
     const cachedMessages: IMessageData[] =
       await messageCache.getChatMessagesFromCache(
         `${req.currentUser!.userId}`,
@@ -40,6 +44,11 @@ export class GetChatMessagesController {
         new mongoose.Types.ObjectId(req.currentUser!.userId),
         new mongoose.Types.ObjectId(receiverId as string),
         { createdAt: 1 },
+      );
+    }
+    if (deletedAt) {
+      messages = messages.filter(
+        (message) => new Date(message.createdAt) > deletedAt,
       );
     }
     res.status(HTTP_STATUS.OK).json({

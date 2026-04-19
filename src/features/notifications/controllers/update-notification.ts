@@ -15,4 +15,15 @@ export class UpdateNotificationController {
     });
     res.status(HTTP_STATUS.OK).json({ message: 'Notification marked as read' });
   }
+
+  public async updateAllNotifications(
+    req: Request,
+    res: Response,
+  ): Promise<void> {
+    socketIONotificationObject.emit('update all notifications', (req as any).currentUser!.userId);
+    notificationQueue.addNotificationJob('updateAllNotifications', {
+      key: (req as any).currentUser!.userId,
+    });
+    res.status(HTTP_STATUS.OK).json({ message: 'All notifications marked as read' });
+  }
 }

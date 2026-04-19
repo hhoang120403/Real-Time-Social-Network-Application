@@ -46,6 +46,11 @@ class ChatRoutes {
       UpdateChatMessageController.prototype.markMessageAsRead,
     );
     this.router.put(
+      '/chat/message/update',
+      authMiddleware.checkAuthentication,
+      UpdateChatMessageController.prototype.editChatMessage,
+    );
+    this.router.put(
       '/chat/message/reaction',
       authMiddleware.checkAuthentication,
       AddMessageReactionController.prototype.addMessageReaction,
@@ -54,6 +59,11 @@ class ChatRoutes {
       '/chat/message/mark-as-deleted/:messageId/:senderId/:receiverId/:type',
       authMiddleware.checkAuthentication,
       DeleteChatMessageController.prototype.markMessageAsDeleted,
+    );
+    this.router.delete(
+      '/chat/message/conversation/:receiverId',
+      authMiddleware.checkAuthentication,
+      DeleteChatMessageController.prototype.deleteConversationForMe,
     );
 
     return this.router;

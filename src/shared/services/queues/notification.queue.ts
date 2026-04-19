@@ -15,6 +15,11 @@ class NotificationQueue extends BaseQueue {
       5,
       notificationWorker.deleteNotification,
     );
+    this.processJob(
+      'updateAllNotifications',
+      5,
+      notificationWorker.updateAllNotifications,
+    );
   }
 
   public addNotificationJob(name: string, data: INotificationJobData): void {

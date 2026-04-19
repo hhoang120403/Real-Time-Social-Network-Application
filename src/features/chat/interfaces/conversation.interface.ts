@@ -4,4 +4,9 @@ export interface IConversationDocument extends Document {
   _id: mongoose.Types.ObjectId;
   senderId: mongoose.Types.ObjectId;
   receiverId: mongoose.Types.ObjectId;
+  deletedFor: mongoose.Types.ObjectId[];
+  deletedAtFor: {
+    userId: mongoose.Types.ObjectId;
+    deletedAt: Date;
+  }[];
 }

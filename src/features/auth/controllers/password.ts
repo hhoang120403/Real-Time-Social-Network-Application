@@ -59,6 +59,11 @@ export class Password {
       throw new BadRequestError('Reset token is invalid or has expired');
     }
 
+    const isSamePassword = await user.comparePassword(password);
+    if (isSamePassword) {
+      throw new BadRequestError('New password must be different from the old one');
+    }
+
     user.password = password;
     user.passwordResetToken = undefined;
     user.passwordResetExpires = undefined;

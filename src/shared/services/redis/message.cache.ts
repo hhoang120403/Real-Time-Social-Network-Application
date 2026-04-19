@@ -149,6 +149,33 @@ export class MessageCache extends BaseCache {
     }
   }
 
+  public async removeChatListItemFromCache(
+    senderId: string,
+    receiverId: string,
+  ): Promise<void> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const userChatList: string[] = await this.client.LRANGE(
+        `chatList:${senderId}`,
+        0,
+        -1,
+      );
+      const receiver: string = find(userChatList, (item: string) =>
+        item.includes(receiverId),
+      ) as string;
+
+      if (receiver) {
+        await this.client.LREM(`chatList:${senderId}`, 1, receiver);
+      }
+    } catch (error) {
+      log.error(error);
+      throw new ServerError('Server error. Try again.');
+    }
+  }
+
   public async getChatMessagesFromCache(
     senderId: string,
     receiverId: string,
@@ -227,6 +254,51 @@ export class MessageCache extends BaseCache {
       )) as string;
 
       return Helpers.parseJson(lastMessage) as IMessageData;
+    } catch (error) {
+      log.error(error);
+      throw new ServerError('Server error. Try again.');
+    }
+  }
+
+  public async updateChatMessage(
+    senderId: string,
+    receiverId: string,
+    messageId: string,
+    body: string,
+    gifUrl: string,
+    selectedImage: string,
+  ): Promise<IMessageData & { isLastMessage: boolean }> {
+    try {
+      if (!this.client.isOpen) {
+        await this.client.connect();
+      }
+
+      const { index, message, receiver } = await this.getMessage(
+        senderId,
+        receiverId,
+        messageId,
+      );
+      const chatItem = Helpers.parseJson(message) as IMessageData;
+      chatItem.body = body;
+      chatItem.gifUrl = gifUrl;
+      chatItem.selectedImage = selectedImage;
+
+      await this.client.LSET(
+        `messages:${receiver.conversationId}`,
+        index,
+        JSON.stringify(chatItem),
+      );
+
+      const lastMessage = (await this.client.LINDEX(
+        `messages:${receiver.conversationId}`,
+        -1,
+      )) as string;
+      const parsedLastMessage = Helpers.parseJson(lastMessage) as IMessageData;
+
+      return {
+        ...chatItem,
+        isLastMessage: `${parsedLastMessage?._id}` === `${chatItem?._id}`,
+      };
     } catch (error) {
       log.error(error);
       throw new ServerError('Server error. Try again.');

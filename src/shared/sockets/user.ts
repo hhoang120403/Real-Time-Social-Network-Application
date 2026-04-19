@@ -21,6 +21,10 @@ export class SocketIOUserHandler {
         this.io.emit('user online', users);
       });
 
+      socket.on('get online users', () => {
+        socket.emit('user online', users);
+      });
+
       socket.on('block user', (data: ISocketData) => {
         this.io.emit('blocked user id', data);
       });

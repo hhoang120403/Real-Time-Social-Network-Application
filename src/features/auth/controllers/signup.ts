@@ -15,7 +15,10 @@ import { config } from '@root/config';
 // import { omit } from 'lodash';
 import { authQueue } from '@service/queues/auth.queue';
 import { userQueue } from '@service/queues/user.queue';
+import { emailQueue } from '@service/queues/email.queue';
+import { emailVerificationTemplate } from '@service/emails/templates/notifications/email-verification-template';
 import JWT from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const userCache: UserCache = new UserCache();
 
@@ -77,16 +80,21 @@ export class SignUp {
     authQueue.addAuthUserJob('addAuthUserToDB', { value: authData });
     userQueue.addUserJob('addUserToDB', { value: userDataForCache });
 
-    const userJwt: string = SignUp.prototype.signupToken(
-      authData,
-      userObjectId,
+    // Send verification email
+    const verificationLink = `${config.CLIENT_URL}/verify-email?token=${authData.emailVerificationToken}`;
+    const template: string = emailVerificationTemplate.emailVerificationTemplate(
+      authData.username,
+      verificationLink,
     );
-    req.session = { jwt: userJwt };
+    emailQueue.addEmailJob('emailVerification', {
+      receiverEmail: authData.email,
+      subject: 'Please verify your email',
+      template,
+    });
 
     res.status(HTTP_STATUS.CREATED).json({
-      message: 'User created successfully',
-      user: userDataForCache,
-      token: userJwt,
+      message: 'Registration successful! Please check your email to verify your account before logging in.',
+      user: userDataForCache
     });
   }
 
@@ -114,6 +122,8 @@ export class SignUp {
       password,
       avatarColor,
       createdAt: new Date(),
+      emailVerificationToken: crypto.randomBytes(20).toString('hex'),
+      emailVerified: false,
     } as IAuthDocument;
   }
 

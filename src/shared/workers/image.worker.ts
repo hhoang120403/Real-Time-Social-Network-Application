@@ -2,8 +2,10 @@ import { DoneCallback, Job } from 'bull';
 import Logger from 'bunyan';
 import { config } from '@root/config';
 import { imageService } from '@service/db/image.service';
+import { PostCache } from '@service/redis/post.cache';
 
 const log: Logger = config.createLogger('image-worker');
+const postCache: PostCache = new PostCache();
 
 class ImageWorker {
   async updateUserProfileImageToDB(
@@ -12,12 +14,10 @@ class ImageWorker {
   ): Promise<void> {
     try {
       const { key, value, imgId, imgVersion } = job.data;
-      await imageService.updateUserProfileImageToDB(
-        key,
-        value,
-        imgId,
-        imgVersion,
-      );
+      await Promise.all([
+        imageService.updateUserProfileImageToDB(key, value, imgId, imgVersion),
+        postCache.updatePostUserProfilePictureInCache(key, value)
+      ]);
       job.progress(100);
       done(null, job.data);
     } catch (error) {

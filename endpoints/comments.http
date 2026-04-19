@@ -8,10 +8,10 @@ Accept: application/json
 withCredentials: true
 
 {
-    "userTo": "699c3560c87a593145fd53b5",
-    "postId": "699fcff9fe1fbb2b0b6dbd77",
-    "comment": "This is my third comment",
-    "profilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1771587085/6998460a06cd0adfd12dffe2"
+    "userTo": "69b62d2b5ab4c8bd663c0e94",
+    "postId": "69b7925b3e49ffe96e2a1432",
+    "comment": "Hello 10",
+    "profilePicture": "https://res.cloudinary.com/dgneeqwxw/image/upload/v1773548869/69b63544820278448f8a2615"
 }
 
 ###

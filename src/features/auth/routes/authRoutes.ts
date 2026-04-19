@@ -2,6 +2,7 @@ import { Password } from '@auth/controllers/password';
 import { SignIn } from '@auth/controllers/signin';
 import { SignOut } from '@auth/controllers/signout';
 import { SignUp } from '@auth/controllers/signup';
+import { VerifyEmail } from '@auth/controllers/verify-email';
 import express, { Router } from 'express';
 
 class AuthRoutes {
@@ -16,6 +17,7 @@ class AuthRoutes {
     this.router.post('/signin', SignIn.prototype.read);
     this.router.post('/forgot-password', Password.prototype.create);
     this.router.post('/reset-password/:token', Password.prototype.update);
+    this.router.post('/verify-email', VerifyEmail.prototype.update);
     return this.router;
   }
 

@@ -22,9 +22,12 @@ export class SignIn {
     const { username, password } = req.body;
 
     const checkIfUserExists = await authService.getAuthUserByUsername(username);
-
     if (!checkIfUserExists) {
       throw new BadRequestError('Invalid credentials');
+    }
+
+    if (!checkIfUserExists.emailVerified) {
+      throw new BadRequestError('Please verify your email to log in.');
     }
 
     const passwordsMatch = await checkIfUserExists.comparePassword(password);

@@ -79,10 +79,12 @@ export class FollowerCache extends BaseCache {
           username: user.username!,
           avatarColor: user.avatarColor!,
           uId: user.uId!,
-          postCount: user.postsCount!,
+          postsCount: user.postsCount!,
           followersCount: user.followersCount!,
           followingCount: user.followingCount!,
           profilePicture: user.profilePicture!,
+          bgImageVersion: user.bgImageVersion!,
+          bgImageId: user.bgImageId!,
           userProfile: user,
         };
 

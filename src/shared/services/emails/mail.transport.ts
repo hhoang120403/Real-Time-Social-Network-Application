@@ -21,11 +21,7 @@ class MailTransport {
     subject: string,
     body: string,
   ): Promise<void> {
-    if (config.NODE_ENV === 'test' || config.NODE_ENV === 'development') {
-      this.developmentEmailSender(receiverEmail, subject, body);
-    } else {
-      this.productionEmailSender(receiverEmail, subject, body);
-    }
+    this.productionEmailSender(receiverEmail, subject, body);
   }
 
   private async developmentEmailSender(
@@ -44,7 +40,7 @@ class MailTransport {
     });
 
     const mailOptions: IMailOptions = {
-      from: `Instagram App <${config.SENDER_EMAIL}>`,
+      from: `Chatty App <${config.SENDER_EMAIL}>`,
       to: receiverEmail,
       subject,
       html: body,
@@ -65,7 +61,7 @@ class MailTransport {
     body: string,
   ): Promise<void> {
     const mailOptions: IMailOptions = {
-      from: `Instagram App <${config.SENDER_EMAIL}>`,
+      from: `Chatty App <${config.SENDGRID_SENDER}>`,
       to: receiverEmail,
       subject,
       html: body,

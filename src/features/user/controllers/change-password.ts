@@ -32,6 +32,10 @@ export class ChangePasswordController {
       throw new BadRequestError('Invalid credentials');
     }
 
+    if (currentPassword === newPassword) {
+      throw new BadRequestError('New password must be different from the old one');
+    }
+
     const hashedPassword = await existingUser.hashPassword(newPassword);
     await userService.updatePassword(
       `${req.currentUser!.username}`,

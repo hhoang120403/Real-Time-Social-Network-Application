@@ -85,8 +85,6 @@ export class AddChatMessageController {
       deleteForMe: false,
     };
 
-    AddChatMessageController.prototype.emitSocketIoEvent(messageData);
-
     if (!isRead) {
       AddChatMessageController.prototype.messageNotification({
         currentUser: req.currentUser!,
@@ -116,6 +114,8 @@ export class AddChatMessageController {
       `${conversationObjectId}`,
       messageData,
     );
+
+    AddChatMessageController.prototype.emitSocketIoEvent(messageData);
 
     // 4 - Add message to chat queue (db)
     chatQueue.addChatJob('addChatMessageToDB', messageData);

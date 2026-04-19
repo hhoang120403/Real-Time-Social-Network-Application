@@ -6,14 +6,16 @@ const SALT_ROUND = 10;
 
 const authSchema = new Schema<IAuthDocument>(
   {
-    username: { type: String },
+    username: { type: String, index: true },
     uId: { type: String },
-    email: { type: String },
+    email: { type: String, index: true },
     password: { type: String },
     avatarColor: { type: String },
     createdAt: { type: Date, default: Date.now },
     passwordResetToken: { type: String, default: '' },
     passwordResetExpires: { type: Number },
+    emailVerificationToken: { type: String, default: '' },
+    emailVerified: { type: Boolean, default: false },
   },
   {
     toJSON: {

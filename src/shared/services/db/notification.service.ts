@@ -53,7 +53,7 @@ class NotificationService {
             },
           },
         },
-      ]);
+      ]).sort({ createdAt: -1 });
 
     return notifications;
   }
@@ -67,6 +67,13 @@ class NotificationService {
 
   public async deleteNotification(notificationId: string): Promise<void> {
     await NotificationModel.deleteOne({ _id: notificationId }).exec();
+  }
+
+  public async updateAllNotifications(userId: string): Promise<void> {
+    await NotificationModel.updateMany(
+      { userTo: userId, read: false },
+      { $set: { read: true } },
+    ).exec();
   }
 }
 
