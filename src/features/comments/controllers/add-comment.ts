@@ -25,6 +25,7 @@ export class AddCommentController {
       profilePicture,
       comment,
       userTo,
+      userFrom: req.currentUser!.userId,
       createdAt: new Date(),
     } as ICommentDocument;
 

@@ -1,3 +1,4 @@
+import { VideoController } from '@chat/controllers/video';
 import { AddChatMessageController } from '@chat/controllers/add-chat-message';
 import { AddMessageReactionController } from '@chat/controllers/add-message-reaction';
 import { DeleteChatMessageController } from '@chat/controllers/delete-chat-message';
@@ -64,6 +65,11 @@ class ChatRoutes {
       '/chat/message/conversation/:receiverId',
       authMiddleware.checkAuthentication,
       DeleteChatMessageController.prototype.deleteConversationForMe,
+    );
+    this.router.get(
+      '/chat/video/token',
+      authMiddleware.checkAuthentication,
+      VideoController.prototype.token,
     );
 
     return this.router;

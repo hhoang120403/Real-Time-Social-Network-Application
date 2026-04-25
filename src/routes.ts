@@ -11,6 +11,8 @@ import { reactionRoutes } from '@reaction/routes/reactionRoutes';
 import { serverAdapter } from '@service/queues/base.queue';
 import { healthRoutes } from '@user/routes/healthRoutes';
 import { userRoutes } from '@user/routes/userRoutes';
+import { collectionRoutes } from '@collections/routes/collectionRoutes';
+import { aiRoutes } from '@ai/routes/ai.routes';
 import { Application } from 'express';
 
 const BASE_PATH = '/api/v1';
@@ -34,6 +36,8 @@ export default (app: Application) => {
     app.use(BASE_PATH, authMiddleware.verifyUser, notificationRoutes.routes());
     app.use(BASE_PATH, authMiddleware.verifyUser, imageRoutes.routes());
     app.use(BASE_PATH, authMiddleware.verifyUser, chatRoutes.routes());
+    app.use(BASE_PATH, authMiddleware.verifyUser, collectionRoutes.routes());
+    app.use(BASE_PATH, authMiddleware.verifyUser, aiRoutes.routes());
     app.use(BASE_PATH, authMiddleware.verifyUser, userRoutes.routes());
   };
 

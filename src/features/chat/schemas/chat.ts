@@ -5,7 +5,7 @@ const addChatSchema: ObjectSchema = Joi.object().keys({
   receiverId: Joi.string().required(),
   receiverUsername: Joi.string().required(),
   receiverAvatarColor: Joi.string().required(),
-  receiverProfilePicture: Joi.string().required(),
+  receiverProfilePicture: Joi.string().optional().allow(null, ''),
   body: Joi.string().optional().allow(null, ''),
   gifUrl: Joi.string().optional().allow(null, ''),
   selectedImage: Joi.string().optional().allow(null, ''),

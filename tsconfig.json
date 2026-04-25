@@ -40,6 +40,8 @@
       "@notification/*": ["src/features/notifications/*"],
       "@image/*": ["src/features/images/*"],
       "@chat/*": ["src/features/chat/*"],
+      "@collections/*": ["src/features/collections/*"],
+      "@ai/*": ["src/features/ai/*"],
       "@global/*": ["src/shared/global/*"],
       "@service/*": ["src/shared/services/*"],
       "@worker/*": ["src/shared/workers/*"],

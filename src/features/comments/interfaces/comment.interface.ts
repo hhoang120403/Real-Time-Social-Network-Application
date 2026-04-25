@@ -10,6 +10,7 @@ export interface ICommentDocument extends Document {
   comment: string;
   createdAt?: Date;
   userTo?: string | ObjectId;
+  userFrom?: string | ObjectId;
 }
 
 export interface ICommentJob {

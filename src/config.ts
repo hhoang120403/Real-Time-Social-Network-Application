@@ -20,6 +20,12 @@ class Config {
   public SENDGRID_API_KEY: string | undefined;
   public SENDGRID_SENDER: string | undefined;
   public EC2_URL: string | undefined;
+  public STREAM_API_KEY: string | undefined;
+  public STREAM_API_SECRET: string | undefined;
+  public GEMINI_API_KEY: string | undefined;
+  public GEMINI_MODEL: string | undefined;
+  public GEMINI_FALLBACK_MODELS: string | undefined;
+  public AI_PYTHON_URL: string | undefined;
 
   constructor() {
     this.DATABASE_URL = process.env.MONGO_URI;
@@ -37,6 +43,13 @@ class Config {
     this.SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
     this.SENDGRID_SENDER = process.env.SENDGRID_SENDER || '';
     this.EC2_URL = process.env.EC2_URL || '';
+    this.STREAM_API_KEY = process.env.STREAM_API_KEY || '';
+    this.STREAM_API_SECRET = process.env.STREAM_API_SECRET || '';
+    this.GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+    this.GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    this.GEMINI_FALLBACK_MODELS =
+      process.env.GEMINI_FALLBACK_MODELS || 'gemini-2.5-flash-lite';
+    this.AI_PYTHON_URL = process.env.AI_PYTHON_URL || 'http://localhost:8080';
   }
 
   public createLogger(name: string): bunyan {

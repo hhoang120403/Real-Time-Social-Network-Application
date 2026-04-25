@@ -14,12 +14,11 @@ import { IPostDocument } from '@post/interfaces/post.interface';
 import { PostModel } from '@post/models/post.schema';
 import { notificationTemplate } from '@service/emails/templates/notifications/notification-template';
 import { emailQueue } from '@service/queues/email.queue';
-import { UserCache } from '@service/redis/user.cache';
 import { socketIONotificationObject } from '@socket/notification';
+import { AuthModel } from '@auth/models/auth.schema';
 import { IUserDocument } from '@user/interfaces/user.interface';
+import { UserModel } from '@user/models/user.schema';
 import mongoose, { Query } from 'mongoose';
-
-const userCache: UserCache = new UserCache();
 
 class CommentService {
   public async addCommentToDB(commentData: ICommentJob): Promise<void> {
@@ -32,42 +31,153 @@ class CommentService {
         { new: true },
       ) as unknown as Query<IPostDocument, IPostDocument>;
 
-    const user: Promise<IUserDocument> = userCache.getUserFromCache(
-      userTo,
-    ) as Promise<IUserDocument>;
+    const result: [ICommentDocument, IPostDocument] = await Promise.all([
+      comments,
+      post,
+    ]);
 
-    const result: [ICommentDocument, IPostDocument, IUserDocument] =
-      await Promise.all([comments, post, user]);
+    await this.sendCommentsNotifications({
+      postId,
+      postOwnerId: userTo,
+      userFrom,
+      username,
+      comment: result[0],
+      post: result[1],
+    });
+  }
 
-    // Send comments notification
-    if (result[2].notifications.comments && userFrom !== userTo) {
+  private async getCommentNotificationRecipients({
+    postId,
+    postOwnerId,
+    userFrom,
+    username,
+  }: {
+    postId: string;
+    postOwnerId: string;
+    userFrom: string;
+    username: string;
+  }): Promise<IUserDocument[]> {
+    const currentUserId = `${userFrom}`;
+    const recipientIds = new Set<string>();
+    const commenterUsernames = new Set<string>();
+
+    if (`${postOwnerId}` !== currentUserId) {
+      recipientIds.add(`${postOwnerId}`);
+    }
+
+    const postComments: ICommentDocument[] = await CommentsModel.find({
+      postId,
+    }).exec();
+
+    for (const postComment of postComments) {
+      const commentUserFrom = postComment.userFrom
+        ? `${postComment.userFrom}`
+        : '';
+      if (commentUserFrom && commentUserFrom !== currentUserId) {
+        recipientIds.add(commentUserFrom);
+      } else if (!commentUserFrom && postComment.username !== username) {
+        commenterUsernames.add(postComment.username);
+      }
+    }
+
+    const userIdMatches = Array.from(recipientIds)
+      .filter((id) => mongoose.Types.ObjectId.isValid(id))
+      .map((id) => new mongoose.Types.ObjectId(id));
+    const usernameMatches = Array.from(commenterUsernames);
+
+    if (!userIdMatches.length && !usernameMatches.length) {
+      return [];
+    }
+
+    return UserModel.aggregate([
+      {
+        $lookup: {
+          from: AuthModel.collection.name,
+          localField: 'authId',
+          foreignField: '_id',
+          as: 'auth',
+        },
+      },
+      { $unwind: '$auth' },
+      {
+        $match: {
+          $or: [
+            { _id: { $in: userIdMatches } },
+            { 'auth.username': { $in: usernameMatches } },
+          ],
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          notifications: 1,
+          username: '$auth.username',
+          email: '$auth.email',
+        },
+      },
+    ]) as Promise<IUserDocument[]>;
+  }
+
+  private async sendCommentsNotifications({
+    postId,
+    postOwnerId,
+    userFrom,
+    username,
+    comment,
+    post,
+  }: {
+    postId: string;
+    postOwnerId: string;
+    userFrom: string;
+    username: string;
+    comment: ICommentDocument;
+    post: IPostDocument;
+  }): Promise<void> {
+    const recipients = await this.getCommentNotificationRecipients({
+      postId,
+      postOwnerId,
+      userFrom,
+      username,
+    });
+
+    for (const recipient of recipients) {
+      if (
+        !recipient?.notifications?.comments ||
+        `${recipient._id}` === `${userFrom}`
+      ) {
+        continue;
+      }
+
+      const isPostOwner = `${recipient._id}` === `${postOwnerId}`;
+      const notificationMessage = isPostOwner
+        ? `${username} commented on your post`
+        : `${username} also commented on a post`;
+
       const notificationModel: INotificationDocument = new NotificationModel();
       const notifications = await notificationModel.insertNotification({
         userFrom,
-        userTo,
-        message: `${username} commented on your post`,
+        userTo: `${recipient._id}`,
+        message: notificationMessage,
         notificationType: 'comment',
         entityId: new mongoose.Types.ObjectId(postId),
-        createdItemId: new mongoose.Types.ObjectId(result[0]._id),
+        createdItemId: new mongoose.Types.ObjectId(comment._id),
         createdAt: new Date(),
         comment: comment.comment,
         reaction: '',
-        post: result[1].post!,
-        imgId: result[1].imgId!,
-        imgVersion: result[1].imgVersion!,
-        gifUrl: result[1].gifUrl!,
+        post: post.post!,
+        imgId: post.imgId!,
+        imgVersion: post.imgVersion!,
+        gifUrl: post.gifUrl!,
       });
 
-      // Send to client with socketio
       socketIONotificationObject.emit('insert notification', notifications, {
-        userTo,
+        userTo: `${recipient._id}`,
       });
 
-      // Send to email queue
       const templateParams: INotificationTemplate = {
-        username: result[2].username!,
+        username: recipient.username!,
         header: 'Comment Notification',
-        message: `${username} commented on your post`,
+        message: notificationMessage,
       };
 
       const template: string =
@@ -75,7 +185,7 @@ class CommentService {
 
       emailQueue.addEmailJob('commentsEmail', {
         template,
-        receiverEmail: result[2].email!,
+        receiverEmail: recipient.email!,
         subject: 'Post Notification',
       });
     }

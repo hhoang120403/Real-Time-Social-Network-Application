@@ -15,7 +15,10 @@
     "build": "tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
     "test": "jest --coverage=true -w=1 --forceExit --detectOpenHandles --watchAll=false",
     "seeds:dev": "npx ts-node src/seeds.ts",
-    "seeds:prod": "npx ts-node ./build/src/seeds.js"
+    "seeds:prod": "npx ts-node ./build/src/seeds.js",
+    "seed:users": "npx ts-node -r tsconfig-paths/register src/seed/user.seed.ts",
+    "seed:posts": "npx ts-node -r tsconfig-paths/register src/seed/post.seed.ts",
+    "seed:export": "npx ts-node -r tsconfig-paths/register src/seed/export.data.ts"
   },
   "keywords": [],
   "author": "",
@@ -25,9 +28,11 @@
     "@bull-board/express": "^6.17.0",
     "@bull-board/ui": "^6.17.0",
     "@faker-js/faker": "^10.3.0",
+    "@google/generative-ai": "^0.24.1",
     "@jest/types": "^30.2.0",
     "@sendgrid/mail": "^8.1.6",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@stream-io/node-sdk": "^0.7.54",
     "@types/jest": "^30.0.0",
     "axios": "^1.13.6",
     "bcryptjs": "^3.0.3",

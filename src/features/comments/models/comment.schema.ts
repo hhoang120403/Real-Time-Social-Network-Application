@@ -7,6 +7,8 @@ const commentSchema: Schema = new Schema({
   username: { type: String },
   avatarColor: { type: String },
   profilePicture: { type: String },
+  userTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+  userFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
   createdAt: { type: Date, default: Date.now() },
 });
 

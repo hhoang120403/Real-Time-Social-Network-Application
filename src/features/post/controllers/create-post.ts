@@ -15,36 +15,8 @@ import { UploadApiResponse } from 'cloudinary';
 import { uploadVideo, uploads } from '@global/helpers/cloudinary-upload';
 import { BadRequestError } from '@global/helpers/error-handler';
 import { imageQueue } from '@service/queues/image.queue';
-import axios from 'axios';
 
 const postCache: PostCache = new PostCache();
-
-interface ModerationScores {
-  clean: number;
-  hate: number;
-  sexual: number;
-  spam: number;
-  toxic: number;
-}
-
-interface ModerationResult {
-  backend: string;
-  text: string;
-  normalized_text: string;
-  scores: ModerationScores;
-  threshold: number;
-  inappropriate_threshold: number;
-  clean_margin: number;
-  labels: string[];
-  top_label: string;
-  top_score: number;
-  requires_review: boolean;
-  is_inappropriate: boolean;
-}
-
-interface ApiResponse {
-  data: ModerationResult;
-}
 
 export class CreatePostController {
   @joiValidation(postSchema)
