@@ -86,16 +86,20 @@ export class AIController {
   public async getBestTime(req: Request, res: Response): Promise<void> {
     const { post_length, media_count, day_of_week, options } = req.body;
     try {
+      // Map JS day (0=Sun, 1=Mon) to Python day (0=Mon, 6=Sun)
+      const pythonDayOfWeek = (day_of_week + 6) % 7;
+
       const result = await moderationService.predictBestTime({
         post_length,
         media_count,
-        day_of_week,
+        day_of_week: pythonDayOfWeek,
       });
 
+      const normalizedHour = ((result.recommended_hour % 24) + 24) % 24;
       const language = options?.language || 'Vietnamese';
       const prompt = `
-        Our AI prediction says the best time to post this content is at ${result.recommended_hour}:00.
-        Day of week: ${day_of_week} (0=Sunday, 1=Monday...)
+        Our AI prediction says the best time to post this content is at ${normalizedHour}:00.
+        Day of week: ${pythonDayOfWeek} (0=Monday, 1=Tuesday, ..., 6=Sunday)
         Post length: ${post_length} characters
         Media: ${media_count} items
 
@@ -118,6 +122,7 @@ export class AIController {
         message: 'Best time predicted successfully',
         result: {
           ...result,
+          recommended_hour: normalizedHour,
           advice,
         },
       });
