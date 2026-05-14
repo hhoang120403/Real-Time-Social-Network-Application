@@ -186,7 +186,7 @@ class GeminiService {
   public async generateCaption(data: IAIGenerationRequest): Promise<string> {
     try {
       let prompt = '';
-      const { language, tone, useEmoji } = data.options;
+      const { language, tone, useEmoji } = data.options || {};
       const tonePart = tone ? `in a ${tone} tone` : 'in an engaging tone';
       const emojiPart = useEmoji
         ? 'Include 1-3 relevant emojis.'

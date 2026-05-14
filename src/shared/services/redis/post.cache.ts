@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import Logger from 'bunyan';
 import { ServerError } from '@global/helpers/error-handler';
 import { BaseCache } from '@service/redis/base.cache';
@@ -18,13 +20,18 @@ export type PostCacheMultiType =
   | IPostDocument
   | IPostDocument[];
 
+interface IDeletePostCacheResult {
+  deletedPostIds: string[];
+  updatedOriginalPost?: IPostDocument;
+}
+
 export class PostCache extends BaseCache {
   constructor() {
     super('post-cache');
   }
 
   public async savePostToCache(data: ISavePostToCache): Promise<void> {
-    const { key, currentUserId, uId, createdPost } = data;
+    const { key, currentUserId, createdPost } = data;
     const {
       _id,
       userId,
@@ -43,6 +50,9 @@ export class PostCache extends BaseCache {
       videoId,
       videoVersion,
       reactions,
+      sharesCount,
+      savesCount,
+      sharedPost,
       createdAt,
     } = createdPost;
 
@@ -59,12 +69,15 @@ export class PostCache extends BaseCache {
       privacy: `${privacy}`,
       gifUrl: `${gifUrl}`,
       commentsCount: `${commentsCount}`,
+      sharesCount: `${sharesCount}`,
+      savesCount: `${savesCount}`,
       reactions: JSON.stringify(reactions),
       imgVersion: `${imgVersion}`,
       imgId: `${imgId}`,
       videoId: `${videoId}`,
       videoVersion: `${videoVersion}`,
       createdAt: `${createdAt}`,
+      sharedPost: sharedPost ? JSON.stringify(sharedPost) : '',
     };
 
     try {
@@ -150,10 +163,15 @@ export class PostCache extends BaseCache {
         post.commentsCount = Helpers.parseJson(
           `${post.commentsCount}`,
         ) as number;
+        post.sharesCount = Helpers.parseJson(`${post.sharesCount}`) as number;
+        post.savesCount = Helpers.parseJson(`${post.savesCount}`) as number;
         post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
         post.createdAt = new Date(
           Helpers.parseJson(`${post.createdAt}`),
         ) as Date;
+        if (post.sharedPost) {
+          post.sharedPost = Helpers.parseJson(`${post.sharedPost}`) as any;
+        }
         posts.push(post);
       }
 
@@ -229,10 +247,15 @@ export class PostCache extends BaseCache {
           post.commentsCount = Helpers.parseJson(
             `${post.commentsCount}`,
           ) as number;
+          post.sharesCount = Helpers.parseJson(`${post.sharesCount}`) as number;
+          post.savesCount = Helpers.parseJson(`${post.savesCount}`) as number;
           post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
           post.createdAt = new Date(
             Helpers.parseJson(`${post.createdAt}`),
           ) as Date;
+          if (post.sharedPost) {
+            post.sharedPost = Helpers.parseJson(`${post.sharedPost}`) as any;
+          }
           postsWithImages.push(post);
         }
       }
@@ -291,10 +314,15 @@ export class PostCache extends BaseCache {
           post.commentsCount = Helpers.parseJson(
             `${post.commentsCount}`,
           ) as number;
+          post.sharesCount = Helpers.parseJson(`${post.sharesCount}`) as number;
+          post.savesCount = Helpers.parseJson(`${post.savesCount}`) as number;
           post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
           post.createdAt = new Date(
             Helpers.parseJson(`${post.createdAt}`),
           ) as Date;
+          if (post.sharedPost) {
+            post.sharedPost = Helpers.parseJson(`${post.sharedPost}`) as any;
+          }
           postsWithVideos.push(post);
         }
       }
@@ -324,29 +352,114 @@ export class PostCache extends BaseCache {
     }
   }
 
+  private async updateUserPostsCount(userId: string, delta: number): Promise<void> {
+    const postCount: (string | null)[] = await this.client.HMGET(
+      `users:${userId}`,
+      'postsCount',
+    );
+    const count = Math.max(parseInt(postCount[0] ?? '0', 10) + delta, 0);
+    await this.client.HSET(`users:${userId}`, 'postsCount', count);
+  }
+
   public async deletePostFromCache(
     key: string,
     currentUserId: string,
-  ): Promise<void> {
+  ): Promise<IDeletePostCacheResult> {
     try {
       if (!this.client.isOpen) {
         await this.client.connect();
       }
 
-      const postCount: (string | null)[] = await this.client.HMGET(
-        `users:${currentUserId}`,
-        'postsCount',
-      );
+      const targetPost = (await this.client.HGETALL(`posts:${key}`)) as unknown as IPostDocument;
+      const sharedPostIds: string[] = [];
+      const sharedPosts: IPostDocument[] = [];
+      const allPostIds: string[] = (await this.client.ZRANGE(
+        'post',
+        0,
+        -1,
+      )) as string[];
+
+      for (const postId of allPostIds) {
+        if (postId === key) {
+          continue;
+        }
+
+        const sharedPost = await this.client.HGET(`posts:${postId}`, 'sharedPost');
+        if (!sharedPost) {
+          continue;
+        }
+
+        const parsedSharedPost = Helpers.parseJson(sharedPost);
+        if (`${parsedSharedPost?._id || ''}` === `${key}`) {
+          sharedPostIds.push(postId);
+          const sharedPostData = (await this.client.HGETALL(
+            `posts:${postId}`,
+          )) as unknown as IPostDocument;
+          sharedPosts.push(sharedPostData);
+        }
+      }
+
+      const deletedPostIds = [key, ...sharedPostIds];
       const multi: ReturnType<typeof this.client.multi> = this.client.multi();
 
-      // ZREM: removes the specified members from the sorted set at <key>
-      multi.ZREM('post', `${key}`);
-      multi.DEL(`posts:${key}`);
-      multi.DEL(`comments:${key}`);
-      multi.DEL(`reactions:${key}`);
-      const count: number = parseInt(postCount[0] ?? '0', 10) - 1;
-      multi.HSET(`users:${currentUserId}`, 'postsCount', count);
+      for (const postId of deletedPostIds) {
+        multi.ZREM('post', `${postId}`);
+        multi.DEL(`posts:${postId}`);
+        multi.DEL(`comments:${postId}`);
+        multi.DEL(`reactions:${postId}`);
+      }
       await multi.exec();
+
+      const ownerCounts = new Map<string, number>();
+      if (targetPost?.userId) {
+        ownerCounts.set(`${targetPost.userId}`, 1);
+      } else {
+        ownerCounts.set(currentUserId, 1);
+      }
+
+      for (const post of sharedPosts) {
+        if (post?.userId) {
+          ownerCounts.set(`${post.userId}`, (ownerCounts.get(`${post.userId}`) || 0) + 1);
+        }
+      }
+
+      await Promise.all(
+        Array.from(ownerCounts.entries()).map(([userId, count]) =>
+          this.updateUserPostsCount(userId, -count),
+        ),
+      );
+
+      let updatedOriginalPost: IPostDocument | undefined;
+      const targetSharedPost = targetPost?.sharedPost
+        ? Helpers.parseJson(`${targetPost.sharedPost}`)
+        : null;
+      const targetSharedPostId = `${targetSharedPost?._id || ''}`;
+      if (targetSharedPostId && !deletedPostIds.includes(targetSharedPostId)) {
+        const originalPost = (await this.client.HGETALL(
+          `posts:${targetSharedPostId}`,
+        )) as unknown as IPostDocument;
+        if (originalPost?._id) {
+          const sharesCount = Math.max(
+            Number(Helpers.parseJson(`${originalPost.sharesCount}`) || 0) - 1,
+            0,
+          );
+          await this.client.HSET(
+            `posts:${targetSharedPostId}`,
+            'sharesCount',
+            `${sharesCount}`,
+          );
+          updatedOriginalPost = {
+            ...originalPost,
+            sharesCount,
+            commentsCount: Helpers.parseJson(`${originalPost.commentsCount}`) as number,
+            savesCount: Helpers.parseJson(`${originalPost.savesCount}`) as number,
+            reactions: Helpers.parseJson(`${originalPost.reactions}`) as IReactions,
+            createdAt: new Date(Helpers.parseJson(`${originalPost.createdAt}`)),
+          } as IPostDocument;
+        }
+      }
+
+      return { deletedPostIds, updatedOriginalPost };
     } catch (error) {
       log.error(error);
       throw new ServerError('Server error. Try again');
@@ -368,6 +481,8 @@ export class PostCache extends BaseCache {
       videoId,
       videoVersion,
       profilePicture,
+      sharesCount,
+      savesCount,
     } = updatedPost;
 
     const dataToSave = {
@@ -381,6 +496,8 @@ export class PostCache extends BaseCache {
       videoId: `${videoId}`,
       videoVersion: `${videoVersion}`,
       profilePicture: `${profilePicture}`,
+      sharesCount: `${sharesCount}`,
+      savesCount: `${savesCount}`,
     };
 
     try {
@@ -398,6 +515,12 @@ export class PostCache extends BaseCache {
       const postReply = reply as IPostDocument[];
       postReply[0].commentsCount = Helpers.parseJson(
         `${postReply[0].commentsCount}`,
+      ) as number;
+      postReply[0].sharesCount = Helpers.parseJson(
+        `${postReply[0].sharesCount}`,
+      ) as number;
+      postReply[0].savesCount = Helpers.parseJson(
+        `${postReply[0].savesCount}`,
       ) as number;
       postReply[0].reactions = Helpers.parseJson(
         `${postReply[0].reactions}`,

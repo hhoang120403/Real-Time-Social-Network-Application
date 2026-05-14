@@ -2,6 +2,8 @@ import {
   ICommentDocument,
   ICommentJob,
   ICommentNameList,
+  ICommentReaction,
+  ICommentReply,
   IQueryComment,
 } from '@comment/interfaces/comment.interface';
 import { CommentsModel } from '@comment/models/comment.schema';
@@ -222,18 +224,243 @@ class CommentService {
           $group: {
             _id: null,
             names: { $addToSet: '$username' },
-            count: { $sum: 1 },
+            count: {
+              $sum: {
+                $add: [
+                  1,
+                  {
+                    $size: {
+                      $ifNull: ['$replies', []],
+                    },
+                  },
+                ],
+              },
+            },
+            replyNames: { $push: '$replies.username' },
+          },
+        },
+        {
+          $project: {
+            names: {
+              $setUnion: [
+                '$names',
+                {
+                  $reduce: {
+                    input: '$replyNames',
+                    initialValue: [],
+                    in: { $concatArrays: ['$$value', '$$this'] },
+                  },
+                },
+              ],
+            },
+            count: 1,
           },
         },
         {
           $project: {
             _id: 0,
+            names: 1,
+            count: 1,
           },
         },
       ],
     );
 
     return commentsNamesList;
+  }
+
+  public async updateCommentReactionInDB(
+    postId: string,
+    commentId: string,
+    reaction: ICommentReaction,
+    previousReaction = '',
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOne({ _id: commentId, postId }).exec();
+    if (!comment) {
+      return null;
+    }
+
+    const reactions = comment.reactions || {
+      like: 0,
+      love: 0,
+      happy: 0,
+      wow: 0,
+      sad: 0,
+      angry: 0,
+    };
+    const reactionList = (comment.reactionList || []).filter(
+      (item) => item.username !== reaction.username,
+    );
+
+    if (previousReaction && reactions[previousReaction as keyof typeof reactions] > 0) {
+      reactions[previousReaction as keyof typeof reactions] -= 1;
+    }
+
+    if (previousReaction !== reaction.type) {
+      reactions[reaction.type as keyof typeof reactions] =
+        (reactions[reaction.type as keyof typeof reactions] || 0) + 1;
+      reactionList.push(reaction);
+    }
+
+    comment.reactions = reactions;
+    comment.reactionList = reactionList;
+    await comment.save();
+    return comment;
+  }
+
+  public async addCommentReplyToDB(
+    postId: string,
+    commentId: string,
+    reply: ICommentReply,
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOneAndUpdate(
+      { _id: commentId, postId },
+      { $push: { replies: reply } },
+      { new: true },
+    ).exec();
+
+    if (comment) {
+      await PostModel.findOneAndUpdate(
+        { _id: postId },
+        { $inc: { commentsCount: 1 } },
+        { new: true },
+      ).exec();
+    }
+
+    return comment;
+  }
+
+  public async updateCommentReplyReactionInDB(
+    postId: string,
+    commentId: string,
+    replyId: string,
+    reaction: ICommentReaction,
+    previousReaction = '',
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOne({ _id: commentId, postId }).exec();
+    if (!comment) {
+      return null;
+    }
+
+    const replies = [...(comment.replies || [])];
+    const replyIndex = replies.findIndex((reply) => reply._id?.toString() === replyId);
+    if (replyIndex === -1) {
+      return comment;
+    }
+
+    const reply = replies[replyIndex];
+    const reactions = reply.reactions || {
+      like: 0,
+      love: 0,
+      happy: 0,
+      wow: 0,
+      sad: 0,
+      angry: 0,
+    };
+    const reactionList = (reply.reactionList || []).filter(
+      (item) => item.username !== reaction.username,
+    );
+
+    if (previousReaction && reactions[previousReaction as keyof typeof reactions] > 0) {
+      reactions[previousReaction as keyof typeof reactions] -= 1;
+    }
+
+    if (previousReaction !== reaction.type) {
+      reactions[reaction.type as keyof typeof reactions] =
+        (reactions[reaction.type as keyof typeof reactions] || 0) + 1;
+      reactionList.push(reaction);
+    }
+
+    replies[replyIndex] = { ...reply, reactions, reactionList };
+    comment.replies = replies;
+    await comment.save();
+    return comment;
+  }
+
+  public async updateCommentTextInDB(
+    postId: string,
+    commentId: string,
+    commentText: string,
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOneAndUpdate(
+      { _id: commentId, postId },
+      { $set: { comment: commentText } },
+      { new: true },
+    ).exec();
+
+    return comment;
+  }
+
+  public async updateCommentReplyTextInDB(
+    postId: string,
+    commentId: string,
+    replyId: string,
+    commentText: string,
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOne({ _id: commentId, postId }).exec();
+    if (!comment) {
+      return null;
+    }
+
+    const replies = [...(comment.replies || [])];
+    const replyIndex = replies.findIndex((reply) => reply._id?.toString() === replyId);
+    if (replyIndex === -1) {
+      return comment;
+    }
+
+    replies[replyIndex] = { ...replies[replyIndex], comment: commentText };
+    comment.replies = replies;
+    await comment.save();
+    return comment;
+  }
+
+  public async deleteCommentReplyFromDB(
+    postId: string,
+    commentId: string,
+    replyId: string,
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOne({ _id: commentId, postId }).exec();
+    if (!comment) {
+      return null;
+    }
+
+    const previousReplyCount = (comment.replies || []).length;
+    comment.replies = (comment.replies || []).filter(
+      (reply) => reply._id?.toString() !== replyId,
+    );
+    if (comment.replies.length === previousReplyCount) {
+      return comment;
+    }
+    await comment.save();
+
+    await PostModel.findOneAndUpdate(
+      { _id: postId },
+      { $inc: { commentsCount: -1 } },
+      { new: true },
+    ).exec();
+
+    return comment;
+  }
+
+  public async deleteCommentFromDB(
+    postId: string,
+    commentId: string,
+  ): Promise<ICommentDocument | null> {
+    const comment = await CommentsModel.findOneAndDelete({
+      _id: commentId,
+      postId,
+    }).exec();
+
+    if (comment) {
+      const deletedCommentsCount = 1 + (comment.replies || []).length;
+      await PostModel.findOneAndUpdate(
+        { _id: postId },
+        { $inc: { commentsCount: -deletedCommentsCount } },
+        { new: true },
+      ).exec();
+    }
+
+    return comment;
   }
 }
 

@@ -14,50 +14,13 @@ import { UploadApiResponse } from 'cloudinary';
 import { uploadVideo, uploads } from '@global/helpers/cloudinary-upload';
 import { BadRequestError } from '@global/helpers/error-handler';
 import { imageQueue } from '@service/queues/image.queue';
+import { moderationService } from '@ai/services/moderation.service';
 
 const postCache: PostCache = new PostCache();
 
 export class UpdatePostController {
   @joiValidation(postSchema)
   public async update(req: Request, res: Response): Promise<void> {
-    // const {
-    //   post,
-    //   bgColor,
-    //   feelings,
-    //   privacy,
-    //   gifUrl,
-    //   imgVersion,
-    //   imgId,
-    //   videoId,
-    //   videoVersion,
-    //   profilePicture,
-    // } = req.body;
-    // const { postId } = req.params;
-    // const updatedPost: IPostDocument = {
-    //   post,
-    //   bgColor,
-    //   feelings,
-    //   privacy,
-    //   gifUrl,
-    //   imgVersion,
-    //   imgId,
-    //   videoId,
-    //   videoVersion,
-    //   profilePicture,
-    // } as IPostDocument;
-
-    // const postUpdated: IPostDocument = await postCache.updatePostInCache(
-    //   postId as string,
-    //   updatedPost,
-    // );
-
-    // socketIOPostObject.emit('update post', postUpdated, 'posts');
-
-    // postQueue.addPostJob('updatePostInDB', {
-    //   key: postId as string,
-    //   value: postUpdated,
-    // });
-
     await UpdatePostController.prototype.handleUpdatePost(req);
 
     res.status(HTTP_STATUS.OK).json({ message: 'Post updated successfully' });
@@ -130,6 +93,15 @@ export class UpdatePostController {
       postId as string,
       updatedPost,
     );
+
+    if (post) {
+      const moderationResult = await moderationService.checkContent(post);
+      if (moderationResult?.is_inappropriate) {
+        throw new BadRequestError(
+          'Post content is inappropriate. Please check again.',
+        );
+      }
+    }
 
     socketIOPostObject.emit('update post', postUpdated, 'posts');
 

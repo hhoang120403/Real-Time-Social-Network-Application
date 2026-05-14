@@ -29,6 +29,7 @@ export class GetPostsController {
       });
       totalPosts = await postService.postsCount();
     }
+    posts = await postService.hydrateCommentsCount(posts);
 
     res
       .status(HTTP_STATUS.OK)
@@ -54,6 +55,7 @@ export class GetPostsController {
             createdAt: -1,
           },
         );
+    posts = await postService.hydrateCommentsCount(posts);
 
     res.status(HTTP_STATUS.OK).json({
       message: 'Posts with images retrieved successfully',
@@ -75,6 +77,7 @@ export class GetPostsController {
       : await postService.getPosts({ videoId: '$ne' }, start, limit, {
           createdAt: -1,
         });
+    posts = await postService.hydrateCommentsCount(posts);
 
     res.status(HTTP_STATUS.OK).json({
       message: 'Posts with videos retrieved successfully',

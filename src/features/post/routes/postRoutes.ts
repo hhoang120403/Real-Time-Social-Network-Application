@@ -3,6 +3,8 @@ import { CreatePostController } from '@post/controllers/create-post';
 import { DeletePostController } from '@post/controllers/delete-post';
 import { GetPostsController } from '@post/controllers/get-posts';
 import { UpdatePostController } from '@post/controllers/update-post';
+import { SharePostController } from '@post/controllers/share-post';
+import { GetShareAndSaveUsersController } from '@post/controllers/get-share-save-users';
 import express, { Router } from 'express';
 
 class PostRoutes {
@@ -46,6 +48,11 @@ class PostRoutes {
       authMiddleware.checkAuthentication,
       CreatePostController.prototype.postWithVideo,
     );
+    this.router.post(
+      '/post/share/:postId',
+      authMiddleware.checkAuthentication,
+      SharePostController.prototype.post,
+    );
 
     this.router.put(
       '/post/:postId',
@@ -69,6 +76,18 @@ class PostRoutes {
       '/post/:postId',
       authMiddleware.checkAuthentication,
       DeletePostController.prototype.delete,
+    );
+
+    this.router.get(
+      '/post/shares/:postId',
+      authMiddleware.checkAuthentication,
+      GetShareAndSaveUsersController.prototype.shares,
+    );
+
+    this.router.get(
+      '/post/saves/:postId',
+      authMiddleware.checkAuthentication,
+      GetShareAndSaveUsersController.prototype.saves,
     );
 
     return this.router;

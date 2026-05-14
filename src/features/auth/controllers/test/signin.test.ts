@@ -14,8 +14,8 @@ const USERNAME = 'Manny';
 const PASSWORD = 'manny1';
 const WRONG_USERNAME = 'ma';
 const WRONG_PASSWORD = 'ma';
-const LONG_PASSWORD = 'mathematics1';
-const LONG_USERNAME = 'mathematics';
+const LONG_PASSWORD = 'mathematics123';
+const LONG_USERNAME = 'mathematics123';
 
 // jest.useFakeTimers();
 jest.mock('@service/queues/base.queue');
@@ -47,24 +47,24 @@ describe('SignIn', () => {
   it('should throw an error if username length is less than minimum length', () => {
     const req: Request = authMockRequest(
       {},
-      { username: WRONG_USERNAME, password: WRONG_PASSWORD },
+      { username: WRONG_USERNAME, password: PASSWORD },
     ) as Request;
     const res: Response = authMockResponse();
     SignIn.prototype.read(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
-      expect(error.serializeErrors().message).toEqual('Invalid username');
+      expect(error.serializeErrors().message).toEqual('Username must be at least 4 characters long');
     });
   });
 
   it('should throw an error if username length is greater than maximum length', () => {
     const req: Request = authMockRequest(
       {},
-      { username: LONG_USERNAME, password: WRONG_PASSWORD },
+      { username: LONG_USERNAME, password: PASSWORD },
     ) as Request;
     const res: Response = authMockResponse();
     SignIn.prototype.read(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
-      expect(error.serializeErrors().message).toEqual('Invalid username');
+      expect(error.serializeErrors().message).toEqual('Username must be at most 12 characters long');
     });
   });
 
@@ -90,7 +90,7 @@ describe('SignIn', () => {
     const res: Response = authMockResponse();
     SignIn.prototype.read(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
-      expect(error.serializeErrors().message).toEqual('Invalid password');
+      expect(error.serializeErrors().message).toEqual('Password must be at least 4 characters long');
     });
   });
 
@@ -102,7 +102,7 @@ describe('SignIn', () => {
     const res: Response = authMockResponse();
     SignIn.prototype.read(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
-      expect(error.serializeErrors().message).toEqual('Invalid password');
+      expect(error.serializeErrors().message).toEqual('Password must be at most 12 characters long');
     });
   });
 

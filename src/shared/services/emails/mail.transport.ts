@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import nodemailer from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import Logger from 'bunyan';
@@ -21,7 +22,11 @@ class MailTransport {
     subject: string,
     body: string,
   ): Promise<void> {
-    this.productionEmailSender(receiverEmail, subject, body);
+    if (config.NODE_ENV === 'development' || config.NODE_ENV === 'test') {
+      await this.developmentEmailSender(receiverEmail, subject, body);
+    } else {
+      await this.productionEmailSender(receiverEmail, subject, body);
+    }
   }
 
   private async developmentEmailSender(
@@ -70,7 +75,10 @@ class MailTransport {
     try {
       await sendGridMail.send(mailOptions);
       log.info('Production email send successfully');
-    } catch (error) {
+    } catch (error: any) {
+      if (error.response) {
+        log.error('SendGrid Error Response:', error.response.body);
+      }
       log.error('Error sending email', error);
       throw new BadRequestError('Error sending email');
     }

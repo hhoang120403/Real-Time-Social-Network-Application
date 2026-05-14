@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { PostModel } from '@post/models/post.schema';
 import { CollectionModel } from '@collections/models/collection.schema';
+import { ReactionModel } from '@reaction/models/reaction.schema';
+import { CommentsModel } from '@comment/models/comment.schema';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -18,21 +20,46 @@ async function exportData() {
     }
 
     await mongoose.connect(MONGO_URI);
-    console.log('Connected to MongoDB for Data Export...');
+    console.log('Connected to MongoDB for REAL Data Export...');
 
     // 1. Fetch all posts
-    const posts = await PostModel.find({});
-    console.log(`Found ${posts.length} posts. Processing...`);
+    const allPosts = await PostModel.find({}).lean();
+    console.log(`Processing ${allPosts.length} posts...`);
 
-    // 2. Fetch all collections to count saves for each post
-    const collections = await CollectionModel.find({});
+    // 2. Pre-fetch counts from other collections for performance
+    // Calculating REAL counts from the collections instead of relying on post fields
+    const reactions = await ReactionModel.find({}).lean();
+    const comments = await CommentsModel.find({}).lean();
+    const collections = await CollectionModel.find({}).lean();
+
+    const postReactionsMap: Record<string, number> = {};
+    const postCommentsMap: Record<string, number> = {};
     const postSavesMap: Record<string, number> = {};
+    const postSharesMap: Record<string, number> = {};
+
+    reactions.forEach((r) => {
+      const id = r.postId.toString();
+      postReactionsMap[id] = (postReactionsMap[id] || 0) + 1;
+    });
+
+    comments.forEach((c) => {
+      const id = c.postId.toString();
+      postCommentsMap[id] = (postCommentsMap[id] || 0) + 1;
+    });
 
     collections.forEach((col) => {
       col.posts.forEach((postId: any) => {
-        const idStr = postId.toString();
-        postSavesMap[idStr] = (postSavesMap[idStr] || 0) + 1;
+        const id = postId.toString();
+        postSavesMap[id] = (postSavesMap[id] || 0) + 1;
       });
+    });
+
+    // Count shares by checking how many posts point to a sharedPost._id
+    allPosts.forEach((p) => {
+      if (p.sharedPost && p.sharedPost._id) {
+        const originalId = p.sharedPost._id.toString();
+        postSharesMap[originalId] = (postSharesMap[originalId] || 0) + 1;
+      }
     });
 
     // 3. Prepare CSV Header
@@ -47,13 +74,14 @@ async function exportData() {
       'reactions_count',
       'comments_count',
       'saves_count',
-      'engagement_score', // The Target Variable
+      'shares_count',
+      'engagement_score',
     ];
 
     let csvContent = headers.join(',') + '\n';
 
-    // 4. Process each post into a row
-    for (const post of posts) {
+    // 4. Process each post (Only original posts or posts with content)
+    for (const post of allPosts) {
       const createdAt = new Date(post.createdAt!);
       const dayOfWeek = createdAt.getDay();
       const hourOfDay = createdAt.getHours();
@@ -63,21 +91,22 @@ async function exportData() {
       const hasImage = post.imgId || post.gifUrl ? 1 : 0;
       const hasVideo = post.videoId ? 1 : 0;
 
-      const reactionsCount = post.reactions
-        ? post.reactions.like +
-          post.reactions.love +
-          post.reactions.happy +
-          post.reactions.wow +
-          post.reactions.sad +
-          post.reactions.angry
-        : 0;
-      const commentsCount = post.commentsCount || 0;
+      // GET REAL COUNTS
+      const reactionsCount = postReactionsMap[post._id.toString()] || 0;
+      const commentsCount = postCommentsMap[post._id.toString()] || 0;
       const savesCount = postSavesMap[post._id.toString()] || 0;
+      const sharesCount = postSharesMap[post._id.toString()] || 0;
 
-      // ENGAGEMENT SCORE FORMULA:
-      // We weight different interactions based on their value
+      // ENGAGEMENT SCORE FORMULA (Weighted for REAL impact)
+      // Shares are the most valuable interaction (weight: 5)
+      // Saves indicate high interest (weight: 4)
+      // Comments indicate deep engagement (weight: 2)
+      // Reactions indicate general interest (weight: 1)
       const engagementScore =
-        reactionsCount * 1 + commentsCount * 2 + savesCount * 4;
+        reactionsCount * 1 + 
+        commentsCount * 2 + 
+        savesCount * 4 + 
+        sharesCount * 5;
 
       const row = [
         post._id,
@@ -90,19 +119,19 @@ async function exportData() {
         reactionsCount,
         commentsCount,
         savesCount,
+        sharesCount,
         engagementScore,
       ];
 
       csvContent += row.join(',') + '\n';
     }
 
-    // 5. Write to File
     const outputPath = path.join(process.cwd(), 'training_data.csv');
     fs.writeFileSync(outputPath, csvContent);
 
     console.log(`--- EXPORT COMPLETED ---`);
-    console.log(`File saved at: ${outputPath}`);
-    console.log(`Total records: ${posts.length}`);
+    console.log(`Total records processed: ${allPosts.length}`);
+    console.log(`File: ${outputPath}`);
 
     process.exit(0);
   } catch (error) {

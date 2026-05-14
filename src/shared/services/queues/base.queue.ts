@@ -13,6 +13,7 @@ import { IFollowerJobData } from '@follower/interfaces/follower.interface';
 import { INotificationJobData } from '@notification/interfaces/notification.interface';
 import { IFileImageJobData } from '@image/interfaces/image.interface';
 import { IChatJobData, IMessageData } from '@chat/interfaces/chat.interface';
+import { IAnalyticsJob, IAIJob } from '@ai/interfaces/ai.interface';
 
 type IBaseJobData =
   | IAuthJob
@@ -25,6 +26,8 @@ type IBaseJobData =
   | IFileImageJobData
   | IChatJobData
   | IMessageData
+  | IAnalyticsJob
+  | IAIJob
   | IUserJob;
 
 let bullAdapters: BullAdapter[] = [];
@@ -62,10 +65,11 @@ export abstract class BaseQueue {
     });
   }
 
-  protected addJob(name: string, data: IBaseJobData): void {
+  protected addJob(name: string, data: IBaseJobData, options?: Queue.JobOptions): void {
     this.queue.add(name, data, {
       attempts: 3,
       backoff: { type: 'fixed', delay: 5000 },
+      ...options
     });
   }
 

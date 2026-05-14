@@ -1,13 +1,14 @@
 import {
   IGetPostsQuery,
   IPostDocument,
-  IQueryComplete,
-  IQueryDeleted,
 } from '@post/interfaces/post.interface';
+import { CollectionModel } from '@collections/models/collection.schema';
+import { CommentsModel } from '@comment/models/comment.schema';
 import { PostModel } from '@post/models/post.schema';
+import { ReactionModel } from '@reaction/models/reaction.schema';
 import { IUserDocument } from '@user/interfaces/user.interface';
 import { UserModel } from '@user/models/user.schema';
-import { Query, UpdateQuery } from 'mongoose';
+import mongoose, { UpdateQuery } from 'mongoose';
 
 class PostService {
   public async addPostToDB(
@@ -55,21 +56,122 @@ class PostService {
     return posts;
   }
 
+  public async hydrateCommentsCount(posts: IPostDocument[]): Promise<IPostDocument[]> {
+    if (!posts.length) {
+      return posts;
+    }
+
+    const postIds = posts
+      .map((post) => post._id?.toString())
+      .filter((postId) => mongoose.Types.ObjectId.isValid(postId))
+      .map((postId) => new mongoose.Types.ObjectId(postId));
+
+    if (!postIds.length) {
+      return posts;
+    }
+    const commentCounts = await CommentsModel.aggregate([
+      {
+        $match: {
+          postId: { $in: postIds },
+        },
+      },
+      {
+        $project: {
+          postId: 1,
+          total: {
+            $add: [
+              1,
+              {
+                $size: {
+                  $ifNull: ['$replies', []],
+                },
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$postId',
+          count: { $sum: '$total' },
+        },
+      },
+    ]);
+
+    const countMap = new Map(
+      commentCounts.map((item) => [item._id.toString(), item.count]),
+    );
+
+    return posts.map((post) => ({
+      ...post,
+      commentsCount: countMap.get(post._id.toString()) || 0,
+    })) as unknown as IPostDocument[];
+  }
+
   public async postsCount(): Promise<number> {
     const count: number = await PostModel.find({}).countDocuments();
     return count;
   }
 
-  public async deletePost(postId: string, userId: string): Promise<void> {
-    const deletePost: Query<IQueryComplete & IQueryDeleted, IPostDocument> =
-      PostModel.deleteOne({ _id: postId });
+  public async deletePost(postId: string, _userId: string): Promise<void> {
+    const targetPost = await PostModel.findById(postId).lean();
+    if (!targetPost) {
+      return;
+    }
 
-    // TODO: delete reactions here
-    const user: UpdateQuery<IUserDocument> = UserModel.updateOne(
-      { _id: userId },
-      { $inc: { postsCount: -1 } },
+    const postObjectId = new mongoose.Types.ObjectId(postId);
+    const sharedPostIds = await PostModel.find({
+      $or: [
+        { 'sharedPost._id': postObjectId },
+        { 'sharedPost._id': postId },
+      ],
+    }).distinct('_id');
+    const deletedPostIds = [postObjectId, ...sharedPostIds];
+    const deletedPostIdsAsStrings = deletedPostIds.map((id) => id.toString());
+
+    const postsByOwner = await PostModel.aggregate([
+      {
+        $match: {
+          _id: { $in: deletedPostIds },
+        },
+      },
+      {
+        $group: {
+          _id: '$userId',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const ownerCountUpdates = postsByOwner.map((owner) =>
+      UserModel.updateOne(
+        { _id: owner._id },
+        { $inc: { postsCount: -owner.count } },
+      ),
     );
-    Promise.all([deletePost, user]);
+
+    const targetSharedPostId = targetPost.sharedPost?._id?.toString();
+    const shouldDecrementOriginalShare =
+      targetSharedPostId &&
+      mongoose.Types.ObjectId.isValid(targetSharedPostId) &&
+      !deletedPostIdsAsStrings.includes(targetSharedPostId);
+
+    await Promise.all([
+      PostModel.deleteMany({ _id: { $in: deletedPostIds } }),
+      ReactionModel.deleteMany({ postId: { $in: deletedPostIdsAsStrings } }),
+      CommentsModel.deleteMany({ postId: { $in: deletedPostIdsAsStrings } }),
+      CollectionModel.updateMany(
+        {},
+        { $pull: { posts: { $in: deletedPostIds } } },
+      ),
+      ...ownerCountUpdates,
+      shouldDecrementOriginalShare
+        ? PostModel.updateOne(
+            { _id: targetSharedPostId },
+            { $inc: { sharesCount: -1 } },
+          )
+        : Promise.resolve(),
+    ]);
   }
 
   public async editPost(

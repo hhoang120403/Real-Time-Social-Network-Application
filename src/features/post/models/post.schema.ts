@@ -17,6 +17,8 @@ const postSchema: Schema = new Schema({
   gifUrl: { type: String, default: '' },
   privacy: { type: String, default: '' },
   commentsCount: { type: Number, default: 0 },
+  sharesCount: { type: Number, default: 0 },
+  savesCount: { type: Number, default: 0 },
   reactions: {
     like: { type: Number, default: 0 },
     love: { type: Number, default: 0 },
@@ -25,6 +27,8 @@ const postSchema: Schema = new Schema({
     sad: { type: Number, default: 0 },
     angry: { type: Number, default: 0 },
   },
+  followerCountAtPostTime: { type: Number, default: 0 },
+  sharedPost: { type: mongoose.Schema.Types.Mixed, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 

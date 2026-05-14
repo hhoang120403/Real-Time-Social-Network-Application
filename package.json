@@ -18,7 +18,9 @@
     "seeds:prod": "npx ts-node ./build/src/seeds.js",
     "seed:users": "npx ts-node -r tsconfig-paths/register src/seed/user.seed.ts",
     "seed:posts": "npx ts-node -r tsconfig-paths/register src/seed/post.seed.ts",
-    "seed:export": "npx ts-node -r tsconfig-paths/register src/seed/export.data.ts"
+    "seed:export": "npx ts-node -r tsconfig-paths/register src/seed/export.data.ts",
+    "seed:1000posts": "npx ts-node -r tsconfig-paths/register src/features/ai/scripts/seed_1000_posts.ts",
+    "ai:export": "npx ts-node -r tsconfig-paths/register src/features/ai/scripts/export_training_data.ts"
   },
   "keywords": [],
   "author": "",

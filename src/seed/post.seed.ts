@@ -30,7 +30,6 @@ async function seedPosts(postCount: number) {
     await mongoose.connect(MONGO_URI);
     console.log('Connected to MongoDB for Post Seeding...');
 
-    // Get both Auth and User data
     const auths = await AuthModel.find({});
     const users = await UserModel.find({});
 
@@ -40,22 +39,20 @@ async function seedPosts(postCount: number) {
     }
 
     console.log(
-      `Starting to seed ${postCount} posts with full interactions (Redis & DB)...`,
+      `Starting to seed ${postCount} posts with REAL interactions simulated...`,
     );
 
+    const createdPostIds: mongoose.Types.ObjectId[] = [];
+
     for (let i = 0; i < postCount; i++) {
-      // Pick a random Auth and its corresponding User
       const randomAuth = auths[Math.floor(Math.random() * auths.length)];
       const currentUser = users.find(
         (u) => u.authId.toString() === randomAuth._id.toString(),
       );
-
       if (!currentUser) continue;
 
       const date = faker.date.recent({ days: 60 });
       const hour = date.getHours();
-
-      // Image generation: Use a placeholder for the avatar
       const profilePicture = `https://robohash.org/${randomAuth.username}?set=set4`;
 
       let engagementMultiplier = 1;
@@ -63,6 +60,7 @@ async function seedPosts(postCount: number) {
         engagementMultiplier = Math.floor(Math.random() * 5) + 3;
       else if (hour >= 0 && hour <= 5) engagementMultiplier = 0.2;
 
+      // Define interaction counts
       const reactionsCount = Math.floor(
         Math.random() * 10 * engagementMultiplier,
       );
@@ -70,9 +68,9 @@ async function seedPosts(postCount: number) {
         Math.random() * 5 * engagementMultiplier,
       );
       const savesCount = Math.floor(Math.random() * 3 * engagementMultiplier);
+      const sharesCount = Math.floor(Math.random() * 2 * engagementMultiplier);
 
       const postId = new mongoose.Types.ObjectId();
-
       const reactionsData = {
         like: reactionsCount,
         love: 0,
@@ -91,19 +89,14 @@ async function seedPosts(postCount: number) {
         profilePicture: profilePicture,
         post: faker.lorem.sentences(Math.floor(Math.random() * 3) + 1),
         bgColor: '#ffffff',
-        imgVersion: '',
-        imgId: '',
-        videoId: '',
-        videoVersion: '',
-        feelings: '',
-        gifUrl: '',
-        privacy: 'Public',
-        commentsCount: commentsCount,
+        commentsCount,
         reactions: reactionsData,
+        sharesCount,
+        savesCount,
         createdAt: date,
+        privacy: 'Public',
       } as any;
 
-      // 1. Save Post to MongoDB & Redis
       await PostModel.create(createdPost);
       await postCache.savePostToCache({
         key: `${postId}`,
@@ -112,18 +105,18 @@ async function seedPosts(postCount: number) {
         createdPost: createdPost,
       });
 
-      // UPDATE: Increment postsCount for user in MongoDB
       await UserModel.updateOne(
         { _id: currentUser._id },
         { $inc: { postsCount: 1 } },
       );
+      createdPostIds.push(postId);
 
-      // 2. Seed Reactions
+      // Seed Reactions
       for (let r = 0; r < reactionsCount; r++) {
         const reactorAuth = auths[Math.floor(Math.random() * auths.length)];
         const reactionData = {
           _id: new mongoose.Types.ObjectId(),
-          postId: postId,
+          postId,
           type: 'like',
           username: reactorAuth.username,
           avatarColor: reactorAuth.avatarColor,
@@ -131,7 +124,6 @@ async function seedPosts(postCount: number) {
           createdAt: date,
         };
         await ReactionModel.create(reactionData as any);
-        // Sync to Redis list: reactions:postId
         await reactionCache.savePostReactionsToCache(
           `${postId}`,
           reactionData as any,
@@ -141,13 +133,12 @@ async function seedPosts(postCount: number) {
         );
       }
 
-      // 3. Seed Comments
+      // Seed Comments
       for (let c = 0; c < commentsCount; c++) {
         const commenterAuth = auths[Math.floor(Math.random() * auths.length)];
-        const commentId = new mongoose.Types.ObjectId();
         const commentData = {
-          _id: commentId,
-          postId: postId,
+          _id: new mongoose.Types.ObjectId(),
+          postId,
           username: commenterAuth.username,
           avatarColor: commenterAuth.avatarColor,
           profilePicture: `https://robohash.org/${commenterAuth.username}?set=set4`,
@@ -155,32 +146,74 @@ async function seedPosts(postCount: number) {
           createdAt: date,
         };
         await CommentsModel.create(commentData as any);
-        // Sync to Redis list: comments:postId
         await commentCache.savePostCommentToCache(
           `${postId}`,
           JSON.stringify(commentData),
         );
       }
 
-      // 4. Seed Saves (Collections)
-      if (savesCount > 0) {
-        for (let s = 0; s < savesCount; s++) {
-          const saver = users[Math.floor(Math.random() * users.length)];
-          await CollectionModel.findOneAndUpdate(
-            { userId: saver._id, name: 'My Saves' },
-            { $addToSet: { posts: postId } },
-            { upsert: true },
-          );
-        }
+      // Seed Saves
+      for (let s = 0; s < savesCount; s++) {
+        const saver = users[Math.floor(Math.random() * users.length)];
+        await CollectionModel.findOneAndUpdate(
+          { userId: saver._id, name: 'My Saves' },
+          { $addToSet: { posts: postId } },
+          { upsert: true },
+        );
       }
 
-      if (i % 20 === 0)
-        console.log(
-          `In progress: ${i}/${postCount} posts with full interaction synced...`,
+      // Seed Shares (Simulated by creating NEW posts that reference this one)
+      for (let sh = 0; sh < sharesCount; sh++) {
+        const sharerAuth = auths[Math.floor(Math.random() * auths.length)];
+        const sharerUser = users.find(
+          (u) => u.authId.toString() === sharerAuth._id.toString(),
         );
+        if (
+          !sharerUser ||
+          sharerUser._id.toString() === currentUser._id.toString()
+        )
+          continue;
+
+        const sharedPostId = new mongoose.Types.ObjectId();
+        const sharedPost: IPostDocument = {
+          _id: sharedPostId,
+          userId: sharerUser._id,
+          username: sharerAuth.username,
+          email: sharerAuth.email,
+          avatarColor: sharerAuth.avatarColor,
+          profilePicture: `https://robohash.org/${sharerAuth.username}?set=set4`,
+          post: `Check this out! ${faker.lorem.sentence()}`,
+          bgColor: '#ffffff',
+          commentsCount: 0,
+          reactions: { like: 0, love: 0, happy: 0, wow: 0, sad: 0, angry: 0 },
+          sharesCount: 0,
+          savesCount: 0,
+          createdAt: faker.date.between({ from: date, to: new Date() }),
+          sharedPost: {
+            _id: postId,
+            userId: currentUser._id as any,
+            username: randomAuth.username,
+            post: createdPost.post,
+            imgId: '',
+            imgVersion: '',
+            createdAt: date,
+          },
+        } as any;
+
+        await PostModel.create(sharedPost);
+        await postCache.savePostToCache({
+          key: `${sharedPostId}`,
+          currentUserId: `${sharerUser._id}`,
+          uId: sharerAuth.uId!,
+          createdPost: sharedPost,
+        });
+      }
+
+      if (i % 50 === 0)
+        console.log(`Progress: ${i}/${postCount} posts seeded...`);
     }
 
-    console.log('--- FULL DATA SEEDING COMPLETED SUCCESSFULLY! ---');
+    console.log('--- SEEDING COMPLETED ---');
     process.exit(0);
   } catch (error) {
     console.error('Error seeding posts:', error);
@@ -188,4 +221,4 @@ async function seedPosts(postCount: number) {
   }
 }
 
-seedPosts(800);
+seedPosts(200);

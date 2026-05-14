@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import { config } from '@root/config';
 
@@ -25,9 +26,12 @@ export interface IModerationResult {
 class ModerationService {
   public async checkContent(text: string): Promise<IModerationResult> {
     try {
-      const response = await axios.post(`${config.AI_PYTHON_URL}/moderation/predict`, {
-        text
-      });
+      const response = await axios.post(
+        `${config.AI_PYTHON_URL}/moderation/predict`,
+        {
+          text,
+        },
+      );
       return response.data;
     } catch (error) {
       console.error('Moderation Service Error:', error);
@@ -35,13 +39,33 @@ class ModerationService {
     }
   }
 
-  public async predictBestTime(data: { post_length: number; media_count: number; day_of_week: number }): Promise<any> {
+  public async predictBestTime(data: {
+    post_length: number;
+    media_count: number;
+    day_of_week: number;
+  }): Promise<any> {
     try {
-      const response = await axios.post(`${config.AI_PYTHON_URL}/best-time/predict`, data);
+      const response = await axios.post(
+        `${config.AI_PYTHON_URL}/best-time/predict`,
+        data,
+      );
       return response.data;
     } catch (error) {
       console.error('BestTime Service Error:', error);
       throw new Error('Error connecting to AI BestTime Service');
+    }
+  }
+
+  public async predictBestTimeScores(candidates: any[]): Promise<any> {
+    try {
+      const response = await axios.post(
+        `${config.AI_PYTHON_URL}/best-time/predict-scores`,
+        { candidates },
+      );
+      return response.data;
+    } catch (error) {
+      console.error('BestTime Scores Service Error:', error);
+      throw new Error('Error connecting to AI BestTime Scores Service');
     }
   }
 }

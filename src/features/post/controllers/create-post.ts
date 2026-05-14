@@ -15,14 +15,20 @@ import { UploadApiResponse } from 'cloudinary';
 import { uploadVideo, uploads } from '@global/helpers/cloudinary-upload';
 import { BadRequestError } from '@global/helpers/error-handler';
 import { imageQueue } from '@service/queues/image.queue';
+import { UserCache } from '@service/redis/user.cache';
+import { analyticsQueue } from '@service/queues/analytics.queue';
+import { moderationService } from '@ai/services/moderation.service';
 
 const postCache: PostCache = new PostCache();
+const userCache: UserCache = new UserCache();
 
 export class CreatePostController {
   @joiValidation(postSchema)
   public async post(req: Request, res: Response): Promise<void> {
     const { post, bgColor, privacy, gifUrl, profilePicture, feelings } =
       req.body;
+
+    const user = await userCache.getUserFromCache(`${req.currentUser!.userId}`);
 
     const postObjectId: ObjectId = new ObjectId();
     const createdPost: IPostDocument = {
@@ -38,27 +44,25 @@ export class CreatePostController {
       privacy,
       gifUrl,
       commentsCount: 0,
+      sharesCount: 0,
+      savesCount: 0,
       imgVersion: '',
       imgId: '',
       videoVersion: '',
       videoId: '',
+      followerCountAtPostTime: user?.followersCount || 0,
       createdAt: new Date(),
       reactions: { like: 0, love: 0, happy: 0, angry: 0, sad: 0, wow: 0 },
     } as IPostDocument;
 
+    if (post) {
+      const moderationResult = await moderationService.checkContent(post);
+      if (moderationResult?.is_inappropriate) {
+        throw new BadRequestError('Post content is inappropriate. Please check again.');
+      }
+    }
+
     socketIOPostObject.emit('add post', createdPost);
-
-    // const moderationResult: ApiResponse = await axios.post(
-    //   'http://localhost:8080/moderation/predict',
-    //   { text: post },
-    // );
-
-    // if (moderationResult?.data?.is_inappropriate) {
-    //   res.status(HTTP_STATUS.OK).json({
-    //     message: 'Post contains inappropriate content',
-    //   });
-    //   return;
-    // }
 
     await postCache.savePostToCache({
       key: postObjectId.toString(),
@@ -71,6 +75,12 @@ export class CreatePostController {
       key: req.currentUser!.userId,
       value: createdPost,
     });
+
+    analyticsQueue.addAnalyticsJob(
+      'calculate-post-engagement',
+      { postId: postObjectId.toString(), userId: req.currentUser!.userId },
+      { delay: 24 * 60 * 60 * 1000 },
+    );
 
     res
       .status(HTTP_STATUS.CREATED)
@@ -90,6 +100,8 @@ export class CreatePostController {
       throw new BadRequestError(result.message);
     }
 
+    const user = await userCache.getUserFromCache(`${req.currentUser!.userId}`);
+
     const postObjectId: ObjectId = new ObjectId();
     const createdPost: IPostDocument = {
       _id: postObjectId,
@@ -104,13 +116,23 @@ export class CreatePostController {
       privacy,
       gifUrl,
       commentsCount: 0,
+      sharesCount: 0,
+      savesCount: 0,
       imgVersion: result.version.toString(),
       imgId: result.public_id!,
       videoVersion: '',
       videoId: '',
+      followerCountAtPostTime: user?.followersCount || 0,
       createdAt: new Date(),
       reactions: { like: 0, love: 0, happy: 0, angry: 0, sad: 0, wow: 0 },
     } as IPostDocument;
+
+    if (post) {
+      const moderationResult = await moderationService.checkContent(post);
+      if (moderationResult?.is_inappropriate) {
+        throw new BadRequestError('Post content is inappropriate. Please check again.');
+      }
+    }
 
     socketIOPostObject.emit('add post', createdPost);
 
@@ -125,6 +147,12 @@ export class CreatePostController {
       key: req.currentUser!.userId,
       value: createdPost,
     });
+
+    analyticsQueue.addAnalyticsJob(
+      'calculate-post-engagement',
+      { postId: postObjectId.toString(), userId: req.currentUser!.userId },
+      { delay: 24 * 60 * 60 * 1000 },
+    );
 
     // Call image queue to add image to mongodb database
     imageQueue.addImageJob('addImageToDB', {
@@ -151,6 +179,8 @@ export class CreatePostController {
       throw new BadRequestError(result.message);
     }
 
+    const user = await userCache.getUserFromCache(`${req.currentUser!.userId}`);
+
     const postObjectId: ObjectId = new ObjectId();
     const createdPost: IPostDocument = {
       _id: postObjectId,
@@ -165,13 +195,23 @@ export class CreatePostController {
       privacy,
       gifUrl,
       commentsCount: 0,
+      sharesCount: 0,
+      savesCount: 0,
       imgVersion: '',
       imgId: '',
       videoVersion: result.version.toString(),
       videoId: result.public_id!,
+      followerCountAtPostTime: user?.followersCount || 0,
       createdAt: new Date(),
       reactions: { like: 0, love: 0, happy: 0, angry: 0, sad: 0, wow: 0 },
     } as IPostDocument;
+
+    if (post) {
+      const moderationResult = await moderationService.checkContent(post);
+      if (moderationResult?.is_inappropriate) {
+        throw new BadRequestError('Post content is inappropriate. Please check again.');
+      }
+    }
 
     socketIOPostObject.emit('add post', createdPost);
 
@@ -186,6 +226,12 @@ export class CreatePostController {
       key: req.currentUser!.userId,
       value: createdPost,
     });
+
+    analyticsQueue.addAnalyticsJob(
+      'calculate-post-engagement',
+      { postId: postObjectId.toString(), userId: req.currentUser!.userId },
+      { delay: 24 * 60 * 60 * 1000 },
+    );
 
     res
       .status(HTTP_STATUS.CREATED)

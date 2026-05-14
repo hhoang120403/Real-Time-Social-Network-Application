@@ -41,7 +41,7 @@ describe('SignUp', () => {
     await SignUp.prototype.create(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
       expect(error.serializeErrors().message).toEqual(
-        'Please provide username',
+        'Username is a required field',
       );
     });
   });
@@ -62,7 +62,7 @@ describe('SignUp', () => {
     await SignUp.prototype.create(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
       expect(error.serializeErrors().message).toEqual(
-        'Username must be at least 3 characters long',
+        'Username must be at least 4 characters long',
       );
     });
   });
@@ -83,7 +83,7 @@ describe('SignUp', () => {
     await SignUp.prototype.create(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
       expect(error.serializeErrors().message).toEqual(
-        'Username must be less than 12 characters long',
+        'Username must be at most 12 characters long',
       );
     });
   });
@@ -92,7 +92,7 @@ describe('SignUp', () => {
     const req: Request = authMockRequest(
       {},
       {
-        username: 'mathematicsaaaa',
+        username: 'Manny',
         email: 'test',
         password: 'password',
         avatarColor: 'red',
@@ -103,7 +103,7 @@ describe('SignUp', () => {
 
     await SignUp.prototype.create(req, res).catch((error: CustomError) => {
       expect(error.statusCode).toEqual(400);
-      expect(error.serializeErrors().message).toEqual('Email is not valid');
+      expect(error.serializeErrors().message).toEqual('Email must be valid');
     });
   });
 
@@ -111,7 +111,7 @@ describe('SignUp', () => {
     const req: Request = authMockRequest(
       {},
       {
-        username: 'mathematicsaaaa',
+        username: 'Manny',
         email: '',
         password: 'password',
         avatarColor: 'red',
@@ -146,8 +146,8 @@ describe('SignUp', () => {
       .mockResolvedValue(authMock);
 
     await SignUp.prototype.create(req, res).catch((error: CustomError) => {
-      expect(error.statusCode).toEqual(401);
-      expect(error.serializeErrors().message).toEqual('Unauthorized');
+      expect(error.statusCode).toEqual(400);
+      expect(error.serializeErrors().message).toEqual('Invalid credentials');
     });
   });
 
@@ -178,12 +178,10 @@ describe('SignUp', () => {
       );
 
     await SignUp.prototype.create(req, res);
-    console.log(userSpy.mock);
-    expect(req.session?.token).toBeDefined();
+    expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
-      message: 'User created successfully',
-      user: userSpy.mock.calls[0][2],
-      token: req.session?.jwt,
+      message: 'Registration successful! Please check your email to verify your account before logging in.',
+      user: userSpy.mock.calls[0][2]
     });
   });
 });

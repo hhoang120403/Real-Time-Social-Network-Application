@@ -2,6 +2,24 @@ import { IReactions } from '@root/features/reactions/interfaces/reaction.interfa
 import { ObjectId } from 'mongodb';
 import { Document } from 'mongoose';
 
+export interface ISharedPost {
+  _id: string | ObjectId;
+  userId: string;
+  username: string;
+  email: string;
+  avatarColor: string;
+  profilePicture: string;
+  post: string;
+  bgColor: string;
+  imgVersion?: string;
+  imgId?: string;
+  videoId?: string;
+  videoVersion?: string;
+  gifUrl?: string;
+  privacy?: string;
+  createdAt?: Date;
+}
+
 export interface IPostDocument extends Document {
   // _id?: string | mongoose.Types.ObjectId;
   userId: string;
@@ -12,6 +30,8 @@ export interface IPostDocument extends Document {
   post: string;
   bgColor: string;
   commentsCount: number;
+  sharesCount: number;
+  savesCount: number;
   imgVersion?: string;
   imgId?: string;
   videoId?: string;
@@ -20,7 +40,9 @@ export interface IPostDocument extends Document {
   gifUrl?: string;
   privacy?: string;
   reactions?: IReactions;
+  followerCountAtPostTime?: number;
   createdAt?: Date;
+  sharedPost?: ISharedPost;
 }
 
 export interface IGetPostsQuery {

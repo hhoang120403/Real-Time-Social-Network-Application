@@ -1,3 +1,5 @@
+import { ObjectId } from 'mongoose';
+
 export interface IAIOptions {
   language?: string;
   tone?: string;
@@ -5,8 +7,25 @@ export interface IAIOptions {
 }
 
 export interface IAIGenerationRequest {
-  type: 'generate' | 'alternatives' | 'improve' | 'check' | 'advice';
-  context?: string;
-  image?: string; // base64
-  options: IAIOptions;
+  type:
+    | 'caption'
+    | 'image'
+    | 'video_script'
+    | 'generate'
+    | 'alternatives'
+    | 'improve'
+    | 'check'
+    | 'advice';
+  context: string;
+  image?: string;
+  options?: IAIOptions;
+}
+
+export interface IAnalyticsJob {
+  postId: string | ObjectId;
+  userId: string | ObjectId;
+}
+
+export interface IAIJob {
+  type: 'train_model' | 'export_data';
 }
