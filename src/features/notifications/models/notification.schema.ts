@@ -50,6 +50,14 @@ const notificationSchema: Schema = new Schema({
     type: String,
     default: '',
   },
+  commentImage: {
+    type: String,
+    default: '',
+  },
+  commentGif: {
+    type: String,
+    default: '',
+  },
   createdAt: { type: Date, default: Date.now() },
 });
 
@@ -70,6 +78,8 @@ notificationSchema.methods.insertNotification = async function (
     imgId,
     imgVersion,
     gifUrl,
+    commentImage,
+    commentGif,
   } = body;
 
   await NotificationModel.create({
@@ -86,6 +96,8 @@ notificationSchema.methods.insertNotification = async function (
     imgId,
     imgVersion,
     gifUrl,
+    commentImage,
+    commentGif,
   });
 
   try {

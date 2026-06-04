@@ -21,48 +21,42 @@ const postCache: PostCache = new PostCache();
 export class UpdatePostController {
   @joiValidation(postSchema)
   public async update(req: Request, res: Response): Promise<void> {
-    await UpdatePostController.prototype.handleUpdatePost(req);
+    const postUpdated = await UpdatePostController.prototype.handleUpdatePost(req);
 
-    res.status(HTTP_STATUS.OK).json({ message: 'Post updated successfully' });
+    res.status(HTTP_STATUS.OK).json({ message: 'Post updated successfully', post: postUpdated });
   }
 
   @joiValidation(postWithImageSchema)
   public async updatePostWithImage(req: Request, res: Response): Promise<void> {
     const { imgId, imgVersion } = req.body;
+    let postUpdated: IPostDocument;
     if (imgId && imgVersion) {
-      await UpdatePostController.prototype.handleUpdatePost(req);
+      postUpdated = await UpdatePostController.prototype.handleUpdatePost(req);
     } else {
-      const result: UploadApiResponse =
-        await UpdatePostController.prototype.addFileToExistingPost(req);
-      if (!result.public_id) {
-        throw new BadRequestError(result.message);
-      }
+      postUpdated = await UpdatePostController.prototype.addFileToExistingPost(req);
     }
 
     res
       .status(HTTP_STATUS.OK)
-      .json({ message: 'Post with image updated successfully' });
+      .json({ message: 'Post with image updated successfully', post: postUpdated });
   }
 
   @joiValidation(postWithVideoSchema)
   public async updatePostWithVideo(req: Request, res: Response): Promise<void> {
     const { videoId, videoVersion } = req.body;
+    let postUpdated: IPostDocument;
     if (videoId && videoVersion) {
-      await UpdatePostController.prototype.handleUpdatePost(req);
+      postUpdated = await UpdatePostController.prototype.handleUpdatePost(req);
     } else {
-      const result: UploadApiResponse =
-        await UpdatePostController.prototype.addFileToExistingPost(req);
-      if (!result.public_id) {
-        throw new BadRequestError(result.message);
-      }
+      postUpdated = await UpdatePostController.prototype.addFileToExistingPost(req);
     }
 
     res
       .status(HTTP_STATUS.OK)
-      .json({ message: 'Post with video updated successfully' });
+      .json({ message: 'Post with video updated successfully', post: postUpdated });
   }
 
-  private async handleUpdatePost(req: Request): Promise<void> {
+  private async handleUpdatePost(req: Request): Promise<IPostDocument> {
     const {
       post,
       bgColor,
@@ -109,11 +103,13 @@ export class UpdatePostController {
       key: postId as string,
       value: postUpdated,
     });
+
+    return postUpdated;
   }
 
   private async addFileToExistingPost(
     req: Request,
-  ): Promise<UploadApiResponse> {
+  ): Promise<IPostDocument> {
     const {
       post,
       bgColor,
@@ -130,7 +126,7 @@ export class UpdatePostController {
       : ((await uploadVideo(video)) as UploadApiResponse);
 
     if (!result?.public_id) {
-      return result;
+      throw new BadRequestError(result.message);
     }
 
     const updatedPost: IPostDocument = {
@@ -167,6 +163,6 @@ export class UpdatePostController {
       });
     }
 
-    return result;
+    return postUpdated;
   }
 }

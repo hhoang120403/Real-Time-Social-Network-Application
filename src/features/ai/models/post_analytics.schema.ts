@@ -7,6 +7,7 @@ const postAnalyticsSchema: Schema = new Schema({
   likes: { type: Number, default: 0 },
   comments: { type: Number, default: 0 },
   saves: { type: Number, default: 0 },
+  shares: { type: Number, default: 0 },
   followersCountAtPostTime: { type: Number, default: 0 },
   engagementScore: { type: Number, default: 0 },
   collectedAfterHours: { type: Number, default: 24 },

@@ -197,7 +197,9 @@ async function seed1000Posts() {
         );
         for (const sharer of sharers) {
           const sharePostId = new mongoose.Types.ObjectId();
-          const sharerAuth = auths.find((a) => a._id.toString() === sharer.authId.toString());
+          const sharerAuth = auths.find(
+            (a) => a._id.toString() === sharer.authId.toString(),
+          );
           if (!sharerAuth) continue;
 
           const sharedPostData = {
@@ -238,7 +240,7 @@ async function seed1000Posts() {
               gifUrl: createdPost.gifUrl,
               privacy: createdPost.privacy,
               createdAt: createdPost.createdAt,
-            }
+            },
           } as unknown as IPostDocument;
 
           await postCache.savePostToCache({
@@ -258,7 +260,10 @@ async function seed1000Posts() {
 
       // 7. Create Analytics entry
       const engagementScore =
-        (likesCount * 1 + commentsCount * 3 + savesCount * 4 + sharesCount * 5) /
+        (likesCount * 1 +
+          commentsCount * 3 +
+          savesCount * 4 +
+          sharesCount * 5) /
         Math.max(followers, 1);
       await PostAnalyticsModel.create({
         postId: postId,
@@ -266,6 +271,7 @@ async function seed1000Posts() {
         likes: likesCount,
         comments: commentsCount,
         saves: savesCount,
+        shares: sharesCount,
         followersCountAtPostTime: followers,
         engagementScore,
         collectedAfterHours: 24,

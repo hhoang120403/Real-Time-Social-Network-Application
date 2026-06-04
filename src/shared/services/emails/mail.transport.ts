@@ -23,7 +23,8 @@ class MailTransport {
     body: string,
   ): Promise<void> {
     if (config.NODE_ENV === 'development' || config.NODE_ENV === 'test') {
-      await this.developmentEmailSender(receiverEmail, subject, body);
+      // await this.developmentEmailSender(receiverEmail, subject, body);
+      await this.productionEmailSender(receiverEmail, subject, body);
     } else {
       await this.productionEmailSender(receiverEmail, subject, body);
     }

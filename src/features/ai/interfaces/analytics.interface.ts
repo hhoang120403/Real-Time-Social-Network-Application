@@ -8,6 +8,7 @@ export interface IPostAnalyticsDocument extends Document {
   likes: number;
   comments: number;
   saves: number;
+  shares: number;
   followersCountAtPostTime: number;
   engagementScore: number;
   collectedAfterHours: number;

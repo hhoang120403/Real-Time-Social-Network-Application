@@ -14,6 +14,8 @@ export interface INotificationDocument extends Document {
   imgId: string;
   imgVersion: string;
   gifUrl: string;
+  commentImage?: string;
+  commentGif?: string;
   read?: boolean;
   createdAt?: Date;
   insertNotification(data: INotification): Promise<void>;
@@ -33,6 +35,8 @@ export interface INotification {
   imgId: string;
   imgVersion: string;
   gifUrl: string;
+  commentImage?: string;
+  commentGif?: string;
 }
 
 export interface INotificationJobData {

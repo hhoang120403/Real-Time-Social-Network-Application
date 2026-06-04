@@ -18,6 +18,11 @@ const signupSchema: ObjectSchema = Joi.object().keys({
     'string.email': 'Email must be valid',
     'string.empty': 'Email is a required field',
   }),
+  confirmPassword: Joi.string().required().valid(Joi.ref('password')).messages({
+    'any.only': 'Passwords must match',
+    'any.required': 'Confirm password is a required field',
+    'string.empty': 'Confirm password is a required field',
+  }),
   avatarColor: Joi.string().required().messages({
     'any.required': 'Avatar color is required',
   }),

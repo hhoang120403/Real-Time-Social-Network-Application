@@ -84,7 +84,7 @@ export class CreatePostController {
 
     res
       .status(HTTP_STATUS.CREATED)
-      .json({ message: 'Post created successfully' });
+      .json({ message: 'Post created successfully', post: createdPost });
   }
 
   @joiValidation(postWithImageSchema)
@@ -163,7 +163,7 @@ export class CreatePostController {
 
     res
       .status(HTTP_STATUS.CREATED)
-      .json({ message: 'Post created with image successfully' });
+      .json({ message: 'Post created with image successfully', post: createdPost });
   }
 
   @joiValidation(postWithVideoSchema)
@@ -235,6 +235,6 @@ export class CreatePostController {
 
     res
       .status(HTTP_STATUS.CREATED)
-      .json({ message: 'Post created with video successfully' });
+      .json({ message: 'Post created with video successfully', post: createdPost });
   }
 }

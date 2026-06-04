@@ -11,16 +11,32 @@ import { UserModel } from '@user/models/user.schema';
 import mongoose, { UpdateQuery } from 'mongoose';
 
 class PostService {
+  private normalizePostCounts(post: IPostDocument): IPostDocument {
+    return {
+      ...post,
+      commentsCount: Number.isFinite(Number(post.commentsCount))
+        ? Number(post.commentsCount)
+        : 0,
+      sharesCount: Number.isFinite(Number(post.sharesCount))
+        ? Number(post.sharesCount)
+        : 0,
+      savesCount: Number.isFinite(Number(post.savesCount))
+        ? Number(post.savesCount)
+        : 0,
+    } as IPostDocument;
+  }
+
   public async addPostToDB(
     userId: string,
     createdPost: IPostDocument,
   ): Promise<void> {
-    const post: Promise<IPostDocument> = PostModel.create(createdPost);
+    const normalizedPost = this.normalizePostCounts(createdPost);
+    const post: Promise<IPostDocument> = PostModel.create(normalizedPost);
     const user: UpdateQuery<IUserDocument> = UserModel.updateOne(
       { _id: userId },
       { $inc: { postsCount: 1 } },
     );
-    Promise.all([post, user]);
+    await Promise.all([post, user]);
   }
 
   public async getPosts(
@@ -178,11 +194,12 @@ class PostService {
     postId: string,
     updatedPost: IPostDocument,
   ): Promise<void> {
+    const normalizedPost = this.normalizePostCounts(updatedPost);
     const post: UpdateQuery<IPostDocument> = PostModel.updateOne(
       { _id: postId },
-      { $set: updatedPost },
+      { $set: normalizedPost },
     );
-    Promise.all([post]);
+    await Promise.all([post]);
   }
 }
 

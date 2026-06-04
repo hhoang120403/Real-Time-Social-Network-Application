@@ -112,7 +112,13 @@ class UserService {
     limit: number,
   ): Promise<IUserDocument[]> {
     const users: IUserDocument[] = await UserModel.aggregate([
-      { $match: { _id: { $ne: new mongoose.Types.ObjectId(userId) } } },
+      {
+        $match: {
+          _id: { $ne: new mongoose.Types.ObjectId(userId) },
+          blocked: { $ne: new mongoose.Types.ObjectId(userId) },
+          blockedBy: { $ne: new mongoose.Types.ObjectId(userId) },
+        },
+      },
       { $skip: skip },
       { $limit: limit },
       { $sort: { createdAt: -1 } },
@@ -134,7 +140,13 @@ class UserService {
   public async getRandomUsers(userId: string): Promise<IUserDocument[]> {
     const randomUsers: IUserDocument[] = [];
     const users: IUserDocument[] = await UserModel.aggregate([
-      { $match: { _id: { $ne: new mongoose.Types.ObjectId(userId) } } },
+      {
+        $match: {
+          _id: { $ne: new mongoose.Types.ObjectId(userId) },
+          blocked: { $ne: new mongoose.Types.ObjectId(userId) },
+          blockedBy: { $ne: new mongoose.Types.ObjectId(userId) },
+        },
+      },
       {
         $lookup: {
           from: 'Auth',
@@ -198,6 +210,8 @@ class UserService {
       {
         $match: {
           'user._id': { $ne: new mongoose.Types.ObjectId(currentUserId) },
+          'user.blocked': { $ne: new mongoose.Types.ObjectId(currentUserId) },
+          'user.blockedBy': { $ne: new mongoose.Types.ObjectId(currentUserId) },
         },
       },
       {

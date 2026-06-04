@@ -30,10 +30,11 @@ class AnalyticsService {
     const likes = post.reactions?.like || 0;
     const comments = post.commentsCount || 0;
     const saves = await CollectionModel.countDocuments({ posts: post._id });
+    const shares = post.sharesCount || 0;
     const followers = post.followerCountAtPostTime || 1;
 
     const engagementScore =
-      (likes * 1 + comments * 3 + saves * 4) / Math.max(followers, 1);
+      (likes * 1 + comments * 3 + saves * 4 + shares * 5) / Math.max(followers, 1);
 
     await PostAnalyticsModel.create({
       postId: post._id,
@@ -41,6 +42,7 @@ class AnalyticsService {
       likes,
       comments,
       saves,
+      shares,
       followersCountAtPostTime: followers,
       engagementScore,
       collectedAfterHours: hours,

@@ -168,7 +168,11 @@ export class UserCache extends BaseCache {
         reply.location = Helpers.parseJson(`${reply.location}`);
         reply.quote = Helpers.parseJson(`${reply.quote}`);
 
-        users.push(reply);
+        const isBlocked = reply.blocked && reply.blocked.some((id) => id.toString() === excludedUserKey);
+        const isBlockedBy = reply.blockedBy && reply.blockedBy.some((id) => id.toString() === excludedUserKey);
+        if (!isBlocked && !isBlockedBy) {
+          users.push(reply);
+        }
       }
 
       return users;
@@ -216,6 +220,7 @@ export class UserCache extends BaseCache {
         replies.splice(excludedUsernameIndex, 1);
       }
 
+      const filteredReplies: IUserDocument[] = [];
       for (const reply of replies as IUserDocument[]) {
         reply.createdAt = new Date(Helpers.parseJson(`${reply.createdAt}`));
         reply.postsCount = Helpers.parseJson(`${reply.postsCount}`);
@@ -232,9 +237,15 @@ export class UserCache extends BaseCache {
         reply.school = Helpers.parseJson(`${reply.school}`);
         reply.location = Helpers.parseJson(`${reply.location}`);
         reply.quote = Helpers.parseJson(`${reply.quote}`);
+
+        const isBlocked = reply.blocked && reply.blocked.some((id) => id.toString() === userId);
+        const isBlockedBy = reply.blockedBy && reply.blockedBy.some((id) => id.toString() === userId);
+        if (!isBlocked && !isBlockedBy) {
+          filteredReplies.push(reply);
+        }
       }
 
-      return replies;
+      return filteredReplies;
     } catch (error) {
       log.error('Error getting user from cache', error);
       throw new ServerError('Server error while getting user from cache');

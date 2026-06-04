@@ -20,6 +20,7 @@ import { Request, Response } from 'express';
 import HTTP_STATUS from 'http-status-codes';
 import { ObjectId } from 'mongodb';
 import mongoose from 'mongoose';
+import { userService } from '@service/db/user.service';
 
 const userCache: UserCache = new UserCache();
 const messageCache: MessageCache = new MessageCache();
@@ -48,6 +49,17 @@ export class AddChatMessageController {
     const sender: IUserDocument = (await userCache.getUserFromCache(
       req.currentUser!.userId,
     )) as IUserDocument;
+
+    const receiver: IUserDocument = (await userCache.getUserFromCache(
+      `${receiverId}`,
+    )) as IUserDocument;
+    const receiverUser: IUserDocument = receiver
+      ? receiver
+      : await userService.getUserById(`${receiverId}`);
+
+    if (receiverUser.blocked && receiverUser.blocked.some((id) => id.toString() === req.currentUser!.userId)) {
+      throw new BadRequestError('You have been blocked by this user.');
+    }
 
     if (selectedImage.length) {
       const result: UploadApiResponse = (await uploads(

@@ -15,6 +15,15 @@ class EmailQueue extends BaseQueue {
   }
 
   public addEmailJob(name: string, data: IEmailJob): void {
+    const disabledJobs = [
+      'directMessageEmail',
+      'commentsEmail',
+      'reactionsEmail',
+      'followersEmail',
+    ];
+    if (disabledJobs.includes(name)) {
+      return;
+    }
     this.addJob(name, data);
   }
 }

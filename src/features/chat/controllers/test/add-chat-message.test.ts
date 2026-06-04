@@ -172,4 +172,27 @@ describe('Add', () => {
       ),
     });
   });
+
+  it('should throw BadRequestError if sender is blocked by receiver', async () => {
+    const req: Request = chatMockRequest(
+      {},
+      chatMessage,
+      authUserPayload,
+    ) as Request;
+    const res: Response = chatMockResponse();
+
+    const blockedReceiver = {
+      ...existingUser,
+      blocked: [new mongoose.Types.ObjectId(req.currentUser!.userId)],
+    } as any;
+
+    jest
+      .spyOn(UserCache.prototype, 'getUserFromCache')
+      .mockResolvedValueOnce(existingUser)
+      .mockResolvedValueOnce(blockedReceiver);
+
+    await expect(
+      AddChatMessageController.prototype.addChatMessage(req, res),
+    ).rejects.toThrow('You have been blocked by this user.');
+  });
 });

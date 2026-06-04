@@ -170,6 +170,8 @@ class CommentService {
         imgId: post.imgId!,
         imgVersion: post.imgVersion!,
         gifUrl: post.gifUrl!,
+        commentImage: comment.image || '',
+        commentGif: comment.gifUrl || '',
       });
 
       socketIONotificationObject.emit('insert notification', notifications, {

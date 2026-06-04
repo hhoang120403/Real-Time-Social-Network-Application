@@ -103,9 +103,9 @@ async function exportData() {
       // Comments indicate deep engagement (weight: 2)
       // Reactions indicate general interest (weight: 1)
       const engagementScore =
-        reactionsCount * 1 + 
-        commentsCount * 2 + 
-        savesCount * 4 + 
+        reactionsCount * 1 +
+        commentsCount * 2 +
+        savesCount * 4 +
         sharesCount * 5;
 
       const row = [

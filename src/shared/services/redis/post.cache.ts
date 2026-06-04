@@ -30,6 +30,11 @@ export class PostCache extends BaseCache {
     super('post-cache');
   }
 
+  private normalizeCount(value: unknown): number {
+    const count = Number(value);
+    return Number.isFinite(count) ? count : 0;
+  }
+
   public async savePostToCache(data: ISavePostToCache): Promise<void> {
     const { key, currentUserId, createdPost } = data;
     const {
@@ -68,9 +73,9 @@ export class PostCache extends BaseCache {
       feelings: `${feelings}`,
       privacy: `${privacy}`,
       gifUrl: `${gifUrl}`,
-      commentsCount: `${commentsCount}`,
-      sharesCount: `${sharesCount}`,
-      savesCount: `${savesCount}`,
+      commentsCount: `${this.normalizeCount(commentsCount)}`,
+      sharesCount: `${this.normalizeCount(sharesCount)}`,
+      savesCount: `${this.normalizeCount(savesCount)}`,
       reactions: JSON.stringify(reactions),
       imgVersion: `${imgVersion}`,
       imgId: `${imgId}`,
@@ -160,11 +165,15 @@ export class PostCache extends BaseCache {
         (await multi.exec()) as PostCacheMultiType;
       const posts: IPostDocument[] = [];
       for (const post of replies as IPostDocument[]) {
-        post.commentsCount = Helpers.parseJson(
-          `${post.commentsCount}`,
-        ) as number;
-        post.sharesCount = Helpers.parseJson(`${post.sharesCount}`) as number;
-        post.savesCount = Helpers.parseJson(`${post.savesCount}`) as number;
+        post.commentsCount = this.normalizeCount(
+          Helpers.parseJson(`${post.commentsCount}`),
+        );
+        post.sharesCount = this.normalizeCount(
+          Helpers.parseJson(`${post.sharesCount}`),
+        );
+        post.savesCount = this.normalizeCount(
+          Helpers.parseJson(`${post.savesCount}`),
+        );
         post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
         post.createdAt = new Date(
           Helpers.parseJson(`${post.createdAt}`),
@@ -244,11 +253,15 @@ export class PostCache extends BaseCache {
       const postsWithImages: IPostDocument[] = [];
       for (const post of replies as IPostDocument[]) {
         if ((post.imgId && post.imgVersion) || post.gifUrl) {
-          post.commentsCount = Helpers.parseJson(
-            `${post.commentsCount}`,
-          ) as number;
-          post.sharesCount = Helpers.parseJson(`${post.sharesCount}`) as number;
-          post.savesCount = Helpers.parseJson(`${post.savesCount}`) as number;
+          post.commentsCount = this.normalizeCount(
+            Helpers.parseJson(`${post.commentsCount}`),
+          );
+          post.sharesCount = this.normalizeCount(
+            Helpers.parseJson(`${post.sharesCount}`),
+          );
+          post.savesCount = this.normalizeCount(
+            Helpers.parseJson(`${post.savesCount}`),
+          );
           post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
           post.createdAt = new Date(
             Helpers.parseJson(`${post.createdAt}`),
@@ -311,11 +324,15 @@ export class PostCache extends BaseCache {
       const postsWithVideos: IPostDocument[] = [];
       for (const post of replies as IPostDocument[]) {
         if (post.videoId && post.videoVersion) {
-          post.commentsCount = Helpers.parseJson(
-            `${post.commentsCount}`,
-          ) as number;
-          post.sharesCount = Helpers.parseJson(`${post.sharesCount}`) as number;
-          post.savesCount = Helpers.parseJson(`${post.savesCount}`) as number;
+          post.commentsCount = this.normalizeCount(
+            Helpers.parseJson(`${post.commentsCount}`),
+          );
+          post.sharesCount = this.normalizeCount(
+            Helpers.parseJson(`${post.sharesCount}`),
+          );
+          post.savesCount = this.normalizeCount(
+            Helpers.parseJson(`${post.savesCount}`),
+          );
           post.reactions = Helpers.parseJson(`${post.reactions}`) as IReactions;
           post.createdAt = new Date(
             Helpers.parseJson(`${post.createdAt}`),
@@ -496,8 +513,8 @@ export class PostCache extends BaseCache {
       videoId: `${videoId}`,
       videoVersion: `${videoVersion}`,
       profilePicture: `${profilePicture}`,
-      sharesCount: `${sharesCount}`,
-      savesCount: `${savesCount}`,
+      sharesCount: `${this.normalizeCount(sharesCount)}`,
+      savesCount: `${this.normalizeCount(savesCount)}`,
     };
 
     try {
@@ -513,15 +530,15 @@ export class PostCache extends BaseCache {
       const reply: PostCacheMultiType =
         (await multi.exec()) as PostCacheMultiType;
       const postReply = reply as IPostDocument[];
-      postReply[0].commentsCount = Helpers.parseJson(
-        `${postReply[0].commentsCount}`,
-      ) as number;
-      postReply[0].sharesCount = Helpers.parseJson(
-        `${postReply[0].sharesCount}`,
-      ) as number;
-      postReply[0].savesCount = Helpers.parseJson(
-        `${postReply[0].savesCount}`,
-      ) as number;
+      postReply[0].commentsCount = this.normalizeCount(
+        Helpers.parseJson(`${postReply[0].commentsCount}`),
+      );
+      postReply[0].sharesCount = this.normalizeCount(
+        Helpers.parseJson(`${postReply[0].sharesCount}`),
+      );
+      postReply[0].savesCount = this.normalizeCount(
+        Helpers.parseJson(`${postReply[0].savesCount}`),
+      );
       postReply[0].reactions = Helpers.parseJson(
         `${postReply[0].reactions}`,
       ) as IReactions;

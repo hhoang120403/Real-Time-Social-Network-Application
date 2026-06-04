@@ -32,6 +32,7 @@ describe('SignUp', () => {
         username: '',
         email: 'test@gmail.com',
         password: 'password',
+        confirmPassword: 'password',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -53,6 +54,7 @@ describe('SignUp', () => {
         username: 'us',
         email: 'test@gmail.com',
         password: 'password',
+        confirmPassword: 'password',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -74,6 +76,7 @@ describe('SignUp', () => {
         username: 'mathematicsaaaa',
         email: 'test@gmail.com',
         password: 'password',
+        confirmPassword: 'password',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -95,6 +98,7 @@ describe('SignUp', () => {
         username: 'Manny',
         email: 'test',
         password: 'password',
+        confirmPassword: 'password',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -114,6 +118,7 @@ describe('SignUp', () => {
         username: 'Manny',
         email: '',
         password: 'password',
+        confirmPassword: 'password',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -135,6 +140,7 @@ describe('SignUp', () => {
         username: 'Manny',
         email: 'manny@test.com',
         password: 'qwerty',
+        confirmPassword: 'qwerty',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -158,6 +164,7 @@ describe('SignUp', () => {
         username: 'Manny',
         email: 'manny@test.com',
         password: 'qwerty',
+        confirmPassword: 'qwerty',
         avatarColor: 'red',
         avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
       },
@@ -182,6 +189,26 @@ describe('SignUp', () => {
     expect(res.json).toHaveBeenCalledWith({
       message: 'Registration successful! Please check your email to verify your account before logging in.',
       user: userSpy.mock.calls[0][2]
+    });
+  });
+
+  it('should throw an error if password and confirmPassword do not match', async () => {
+    const req: Request = authMockRequest(
+      {},
+      {
+        username: 'Manny',
+        email: 'manny@test.com',
+        password: 'password',
+        confirmPassword: 'differentpassword',
+        avatarColor: 'red',
+        avatarImage: 'data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==',
+      },
+    ) as Request;
+    const res: Response = authMockResponse();
+
+    await SignUp.prototype.create(req, res).catch((error: CustomError) => {
+      expect(error.statusCode).toEqual(400);
+      expect(error.serializeErrors().message).toEqual('Passwords must match');
     });
   });
 });
